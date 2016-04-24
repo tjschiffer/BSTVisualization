@@ -3,13 +3,26 @@ var bstNode = function(value) {
 	this.leftNode = null;
 	this.rightNode = null;
 	this.parent = null;
-	this.locx = null;
-	this.locy = 50;
+	this.locX = null;
+	this.locY = 50;
+	this.depth = 0;
 }
+
+bstNode.prototype.children = function() {
+	var children = [];
+	if (this.leftNode) {
+		children.push(this.leftNode);
+	}
+	if (this.rightNode) {
+		children.push(this.rightNode);
+	}
+	return children;
+}
+
 rootNode = null;
 
 model = {
-	'scaleFactor': 1
+	'pixelOffset': 50
 }
 
 presenter = {
@@ -17,20 +30,41 @@ presenter = {
 		var node = new bstNode(value);
 		if (!rootNode) {
 			rootNode = node;
-			node.locx = ctx.canvas.width / 2;
+			node.locX = ctx.canvas.width / 2;
 		} else {
-			var pixelOffset = 50, parentNode = presenter.findParentFromValue(rootNode, value);
-			node.parent = parentNode;
+			var pixelOffset = model.pixelOffset, parentNode = presenter.findParentFromValue(rootNode, value);
 			if (value > parentNode.value) {
-				node.locx = parentNode.locx + pixelOffset;
+				node.locX = parentNode.locX + pixelOffset;
 				parentNode.rightNode = node;
 			} else {
-				node.locx = parentNode.locx - pixelOffset;
+				node.locX = parentNode.locX - pixelOffset;
 				parentNode.leftNode = node;
 			}			
-			node.locy = parentNode.locy + pixelOffset*model.scaleFactor;
+			node.locY = parentNode.locY + pixelOffset;
+
+			node.depth = parentNode.depth + 1;
+			node.parent = parentNode;
+			if (node.depth > 1) { // impossible for nodes to overlap at depth less than 2
+				presenter.FixOverlap(node, rootNode);
+			}
 		}
+		
 		return node;
+	},
+	'FixOverlap': function(node, nodeToCheck) {
+		if (!(node === nodeToCheck) && node.locX == nodeToCheck.locX && node.locY == nodeToCheck.locY) {
+			presenter.UpdateLocDownTree(node.parent, (node.parent.locX - node.locX)*2);
+		}
+		$.each(nodeToCheck.children(), function(index, child) {
+			console.log(node, child);
+			presenter.FixOverlap(node, child);
+		})
+	},
+	'UpdateLocDownTree': function(node, shiftX) {
+		node.locX += shiftX;
+		$.each(node.children(), function(index, child) {
+			presenter.UpdateLocDownTree(child, shiftX);
+		})
 	},
 	'findParentFromValue': function(node, value) {
 		if (value < node.value || node.value == value) {
@@ -50,12 +84,9 @@ presenter = {
 	'redrawBST': function(ctx) {
 		function drawDownNodes(node) {
 			view.drawNode(node, ctx);
-			if (node.leftNode) {
-				drawDownNodes(node.leftNode)
-			}
-			if (node.rightNode) {
-				drawDownNodes(node.rightNode)
-			}
+			$.each(node.children(), function(index, child) {
+				drawDownNodes(child);
+			})
 		}
 		if (rootNode) { drawDownNodes(rootNode); }
 	}
@@ -81,7 +112,6 @@ view = {
 			return;
 		}
 		var node = presenter.addNodeAndGetXY(value, ctx);
-		//presenter.redrawBST(ctx);
 		view.draw();
 	},
 	'draw':	function() {
@@ -108,7 +138,7 @@ view = {
 			view.drawConnection(node, node.rightNode, ctx);
 		}
 		ctx.beginPath();
-		ctx.arc(node.locx, node.locy, 25, 0, 2 * Math.PI, false);
+		ctx.arc(node.locX, node.locY, 25, 0, 2 * Math.PI, false);
 		ctx.fillStyle = '#0099cc';
 		ctx.fill();
 		ctx.stroke();
@@ -117,17 +147,28 @@ view = {
 		ctx.font = '16pt Calibri';
 		ctx.fillStyle = '#003300';
 		ctx.textAlign = 'center';
-		ctx.fillText(String(node.value),node.locx, node.locy + 6);
+		ctx.fillText(String(node.value),node.locX, node.locY + 6);
 	},
 	'drawConnection': function(node, childNode, ctx) {
 		ctx.beginPath();
-		ctx.moveTo(node.locx, node.locy);
-		ctx.lineTo(childNode.locx, childNode.locy);
+		ctx.moveTo(node.locX, node.locY);
+		ctx.lineTo(childNode.locX, childNode.locY);
 		ctx.stroke();
 	},
 	'resetZoom': function() {
 		lastEvent = null;
 		view.draw();
+	},
+	'addRandom': function() {
+		var input = document.getElementById('addRandom'), value = Number(input.value);
+		input.value = '';
+		if (!value) {
+			alert("Please enter a value.");
+			return;
+		}
+		for (var i = 0, input, i++) {
+			view.addNode(Math.floor((Math.random() * 10) + 1));
+		}
 	}
 
 }
@@ -142,11 +183,17 @@ var lastEvent = null;
 
 var formFunctions = {
 	'AddNodeForm': view.addNode,
-	'ResetZoom': view.resetZoom
+	'ResetZoom': view.resetZoom,
+	'AddRandomForm': view.addRandoms,
 }
 
-$('.form-inline').on('submit', function () {
-	formFunctions[this.id]();
+$('.form-inline').on('submit', function (event) {
+	event.preventDefault;
+	try {
+		formFunctions[this.id]();
+	} catch(err) {
+		console.log(err);
+	}
 	return false;
 });
 
