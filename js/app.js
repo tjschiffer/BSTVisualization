@@ -82,9 +82,9 @@ view = {
 		}
 		var node = presenter.addNodeAndGetXY(value, ctx);
 		//presenter.redrawBST(ctx);
-		view.zoom();
+		view.draw();
 	},
-	'zoom':	function() {
+	'draw':	function() {
 		ctx.save();
 		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 		if (d3.event) {
@@ -124,23 +124,29 @@ view = {
 		ctx.moveTo(node.locx, node.locy);
 		ctx.lineTo(childNode.locx, childNode.locy);
 		ctx.stroke();
+	},
+	'resetZoom': function() {
+		lastEvent = null;
+		view.draw();
 	}
+
 }
 
 var ctx = d3.select("#canvas")
 	.attr("width", window.innerWidth)
 	.attr("height", window.innerHeight - 50)
-	.call(d3.behavior.zoom().scaleExtent([1, 8]).on("zoom", view.zoom))
+	.call(d3.behavior.zoom().scaleExtent([1, 8]).on("zoom", view.draw))
 	.node().getContext("2d");
 
 var lastEvent = null;
 
 var formFunctions = {
-	'AddNodeForm': view.addNode
+	'AddNodeForm': view.addNode,
+	'ResetZoom': view.resetZoom
 }
 
 $('.form-inline').on('submit', function () {
-	formFunctions['AddNodeForm']();
+	formFunctions[this.id]();
 	return false;
 });
 
