@@ -22,7 +22,7 @@ bstNode.prototype.children = function() {
 rootNode = null;
 
 model = {
-	'pixelOffset': 50
+	'pixelOffset': 40
 }
 
 presenter = {
@@ -101,11 +101,12 @@ view = {
 	// 		.call(d3.behavior.zoom().scaleExtent([1, 8]).on("zoom", view.zoom))
 	// 		.node().getContext("2d");
 	// },
-	'addNode': function() {
+	'addNode': function(manualValue) {
 		var input = document.getElementById('addNode'), value = Number(input.value);
 		input.value = '';
 
-		//value = 10;
+		if (manualValue) { value = manualValue; }
+		console.log(value);
 
 		if (!value) {
 			alert("Please enter a value.");
@@ -129,7 +130,7 @@ view = {
 		ctx.restore();
 	},
 	'drawNode': function(node, ctx) {
-		ctx.lineWidth = 2;
+		ctx.lineWidth = 1;
 		ctx.strokeStyle = '#003300';
 		if (node.leftNode) {
 			view.drawConnection(node, node.leftNode, ctx);
@@ -138,16 +139,16 @@ view = {
 			view.drawConnection(node, node.rightNode, ctx);
 		}
 		ctx.beginPath();
-		ctx.arc(node.locX, node.locY, 25, 0, 2 * Math.PI, false);
+		ctx.arc(node.locX, node.locY, 20, 0, 2 * Math.PI, false);
 		ctx.fillStyle = '#0099cc';
 		ctx.fill();
 		ctx.stroke();
 
 		ctx = canvas.getContext('2d');
-		ctx.font = '16pt Calibri';
+		ctx.font = '14pt Calibri';
 		ctx.fillStyle = '#003300';
 		ctx.textAlign = 'center';
-		ctx.fillText(String(node.value),node.locX, node.locY + 6);
+		ctx.fillText(String(node.value),node.locX, node.locY + 5);
 	},
 	'drawConnection': function(node, childNode, ctx) {
 		ctx.beginPath();
@@ -159,14 +160,15 @@ view = {
 		lastEvent = null;
 		view.draw();
 	},
-	'addRandom': function() {
+	'addRandoms': function() {
 		var input = document.getElementById('addRandom'), value = Number(input.value);
 		input.value = '';
+
 		if (!value) {
 			alert("Please enter a value.");
 			return;
 		}
-		for (var i = 0, input, i++) {
+		for (var i = 0; i < value; i++) {
 			view.addNode(Math.floor((Math.random() * 10) + 1));
 		}
 	}
