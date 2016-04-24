@@ -48,7 +48,7 @@ presenter = {
 		}
 	},
 	'redrawBST': function(ctx) {
-		var drawDownNodes = function(node) {
+		function drawDownNodes(node) {
 			view.drawNode(node, ctx);
 			if (node.leftNode) {
 				drawDownNodes(node.leftNode)
@@ -57,30 +57,48 @@ presenter = {
 				drawDownNodes(node.rightNode)
 			}
 		}
-		drawDownNodes(rootNode);
+		if (rootNode) { drawDownNodes(rootNode); }
 	}
 }
 
+
 view = {
-	'init': function() {
-		var ctx = document.getElementById('canvas').getContext('2d');
-		ctx.canvas.width  = window.innerWidth;
-		ctx.canvas.height = window.innerHeight - 50;
-	},
-	'addNode': function(value) {
+	// 'init': function() {
+	// 	var ctx = d3.select("#canvas")
+	// 		.attr("width", window.innerWidth)
+	// 		.attr("height", window.innerHeight - 50)
+	// 		.call(d3.behavior.zoom().scaleExtent([1, 8]).on("zoom", view.zoom))
+	// 		.node().getContext("2d");
+	// },
+	'addNode': function() {
 		var input = document.getElementById('addNode'), value = Number(input.value);
 		input.value = '';
+
+		//value = 10;
+
 		if (!value) {
 			alert("Please enter a value.");
 			return;
 		}
-		var ctx = document.getElementById('canvas').getContext('2d');
 		var node = presenter.addNodeAndGetXY(value, ctx);
-		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		//presenter.redrawBST(ctx);
+		view.zoom();
+	},
+	'zoom':	function() {
+		ctx.save();
+		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+		if (d3.event) {
+			ctx.translate(d3.event.translate[0], d3.event.translate[1]);
+			ctx.scale(d3.event.scale, d3.event.scale);
+			lastEvent = d3.event;
+		} else if (lastEvent) {
+			ctx.translate(lastEvent.translate[0], lastEvent.translate[1]);
+			ctx.scale(lastEvent.scale, lastEvent.scale);
+		}
 		presenter.redrawBST(ctx);
+		ctx.restore();
 	},
 	'drawNode': function(node, ctx) {
-
 		ctx.lineWidth = 2;
 		ctx.strokeStyle = '#003300';
 		if (node.leftNode) {
@@ -108,8 +126,22 @@ view = {
 		ctx.stroke();
 	}
 }
-view.init();
-$('#AddNodeForm').on('submit', function () {
-	view.addNode();
+
+var ctx = d3.select("#canvas")
+	.attr("width", window.innerWidth)
+	.attr("height", window.innerHeight - 50)
+	.call(d3.behavior.zoom().scaleExtent([1, 8]).on("zoom", view.zoom))
+	.node().getContext("2d");
+
+var lastEvent = null;
+
+var formFunctions = {
+	'AddNodeForm': view.addNode
+}
+
+$('.form-inline').on('submit', function () {
+	formFunctions['AddNodeForm']();
 	return false;
 });
+
+//view.addNode(10);

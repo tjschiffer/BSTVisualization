@@ -6,7 +6,7 @@ body {
 
 body {
 	padding-top: 50px;
-	background-color: #ededed;
+  background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKLW/AAAAG0lEQVQIW2NMSUkxnjNnzlkQzcgABDABRmQZABYMDsKplnKFAAAAAElFTkSuQmCC) repeat;
 }
 
 .sidebar {
@@ -23,9 +23,7 @@ body {
 }*/
 
 #canvas {
-
 	position: fixed;
-	background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKLW/AAAAG0lEQVQIW2NMSUkxnjNnzlkQzcgABDABRmQZABYMDsKplnKFAAAAAElFTkSuQmCC) repeat;
 }
 
 .navbar-inverse .navbar-brand {
