@@ -29,7 +29,7 @@ rootNode = null;
 model = {
 	'pixelOffset': 40,
 	'nodesToAnimate': [],
-	'AnimationSpeed': {'speed': 200, 'delay': 20}
+	'AnimationSpeed': {'speed': 1, 'delay': 250}
 }
 
 presenter = {
@@ -103,6 +103,11 @@ presenter = {
 			})
 		}
 		if (rootNode) { drawDownNodes(rootNode); }
+	},
+	'changeAnimationSpeed': function(value) {
+		if (value > 2) { model.AnimationSpeed.delay = 0; } else
+			{ model.AnimationSpeed.delay = Math.min(0, - 100 * Math.pow(value, 2) + 50 * value + 300); }
+		model.AnimationSpeed.speed = value;
 	},
 	'returnNodesToAnimate': function() {
 		return model.nodesToAnimate;
@@ -178,11 +183,26 @@ view = {
 	},
 	'animateNodes': function(nodesToAnimate, nodeToAdd, numbersToAdd) {
 		var animationSpeed = presenter.returnAnimationSpeed();
+		//var initalSize = node.size;
+		var speed = animationSpeed.speed;
+		function animateNode(node, initalSize) {
+			node.size += speed;
+			if (node.size > (initalSize * 1.5)) {
+				speed *= -1;
+			}
+			if (node.size <= initalSize) { 
+				node.size = initalSize;
+				animateNextNode();
+			} else {
+				view.draw();
+				requestAnimationFrame(function() { animateNode(node, initalSize); });
+			}
+		}
 		function animateNextNode() {
-			if (nodesToAnimate.length > 0 && animationSpeed.speed > 10) {
+			if (nodesToAnimate.length > 0 && animationSpeed.speed <= 5) {
 				var node = nodesToAnimate.shift();
-				view.animateNode(node, animationSpeed);
-				setTimeout(function() { animateNextNode(); }, (animationSpeed.speed * 2) + animationSpeed.delay);
+				speed = animationSpeed.speed;
+				animateNode(node, node.size);
 			} else {
 				presenter.addToParent(nodeToAdd);
 				view.draw();
@@ -194,23 +214,6 @@ view = {
 			}
 		}
 		animateNextNode();
-	},
-	'animateNode': function(node, animationSpeed) {
-		var initalSize = node.size;
-		var t = d3.timer( function(elapsed) {
-			node.size += 1;
-			view.draw();
-			if (elapsed > animationSpeed.speed) { return true; }
-		}, animationSpeed.delay);
-		var t = d3.timer( function(elapsed) {
-			node.size -= 1;
-			view.draw();
-			if (node.size < initalSize) { 
-				node.size = initalSize;
-				view.draw();
-				return true;
-			}
-		}, animationSpeed.speed);
 	},
 	'resetZoom': function() {
 		lastEvent = null;
@@ -229,11 +232,21 @@ view = {
 		}
 		var numbersToAdd = [];
 		for (var i = 0; i < value; i++) {
-			numbersToAdd.push(Math.floor((Math.random() * 1000) + 1));
+			numbersToAdd.push(Math.floor((Math.random() * 999) + 1));
 		}
 		presenter.addNextRandom(numbersToAdd);
 	}
 }
+
+$('#AnimationSpeed').slider({
+	formatter: function(value) {
+		presenter.changeAnimationSpeed(value);
+		if (value > 5) {
+			return 'No Animation';
+		}
+		return value + 'x';
+	}
+});
 
 var ctx = d3.select("#canvas")
 	.attr("width", window.innerWidth)
