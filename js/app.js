@@ -1,3 +1,5 @@
+"use strict";
+
 var bstNode = function(value) {
 	this.value = value;
 	this.leftNode = null;
@@ -7,10 +9,8 @@ var bstNode = function(value) {
 	this.locY = 50;
 	this.depth = 0;
 
-	this.size = 20;
 	this.fillStyle = '#0099cc';
 	this.fillStyleText = '#333';
-	this.font = '14pt Calibri';
 }
 
 bstNode.prototype.children = function() {
@@ -24,16 +24,28 @@ bstNode.prototype.children = function() {
 	return children;
 }
 
-rootNode = null;
 
-model = {
-	'pixelOffset': 40,
+
+// bstNode.prototype.upBranch = function(node) {
+// 	if (this.parent === node) {
+// 		return true;
+// 	} else if (node === rootNode) {
+// 		return false;
+// 	}
+// 	console.log(node);
+// 	this.upBranch(node.parent);
+// }
+
+var rootNode = null;
+
+var model = {
+	'pixelOffset': 60,
 	'nodesToAnimate': [],
 	'AnimationSpeed': {'speed': 1, 'delay': 250}
 }
 
-presenter = {
-	'addNodeAndGetXY': function(value, ctx) {
+var presenter = {
+	'addNode': function(value, ctx) {
 		var node = new bstNode(value);
 		if (!rootNode) {
 			rootNode = node;
@@ -47,42 +59,75 @@ presenter = {
 	},
 	'addToParent': function(node) {
 		if (node.parent) {
-			var parentNode = node.parent, pixelOffset = model.pixelOffset;
-			if (node.value > parentNode.value) {
-				node.locX = parentNode.locX + pixelOffset;
+			//if (node.parent == rootNode) { Xoff = 500; } else { Xoff = 500/node.depth; }//195.639-128.241 * Math.log(node.depth);
+			if (node.value >= parentNode.value) {
 				parentNode.rightNode = node;
 			} else {
-				node.locX = parentNode.locX - pixelOffset;
 				parentNode.leftNode = node;
 			}			
 			node.locY = parentNode.locY + pixelOffset;
+			//if (node.depth > 1) { presenter.FixOverlapInTree(parentNode) };
 		}
 	},
-	'FixOverlapInTree': function(node, nodeToCheck) {
-		if (!(node === nodeToCheck) && node.depth == nodeToCheck.depth
-			 && node.locX == nodeToCheck.locX && node.locY == nodeToCheck.locY) {
-			presenter.UpdateLocDownTree(node.parent, (node.parent.locX - node.locX));
-			presenter.UpdateLocDownTree(nodeToCheck.parent, (nodeToCheck.parent.locX - nodeToCheck.locX));
+	'FixOverlapInTree': function(node) {
+		var turnNode = presenter.findTurnNode(node);
+		if (turnNode) {
+			presenter.UpdateLocDownTree(turnNode, Math.sign(turnNode.locX - turnNode.parent.locX)*model.pixelOffset);
 		}
-		$.each(nodeToCheck.children(), function(index, child) {
-			presenter.FixOverlap(node, child);
-		})
 	},
+	'findTurnNode': function(node) {
+		var returnNode = node.parent;
+		if (node.parent.leftNode === node) {
+			while (returnNode !== rootNode) {
+				if (returnNode.parent.rightNode === returnNode) {
+					return returnNode
+				}
+				returnNode = returnNode.parent;
+			}
+		}
+		if (node.parent.rightNode === node) {
+			while (returnNode !== rootNode) {
+				if (returnNode.parent.leftNode === returnNode) {
+					return returnNode
+				}
+				returnNode = returnNode.parent;
+			}
+		}
+	},
+	// 'FixOverlapInTree': function(node, nodeToCheck) {
+	// 	var shiftX = (node.parent.locX - node.locX)
+	// 	if (!(node === nodeToCheck) && node.depth == nodeToCheck.depth
+	// 		&& node.locX == nodeToCheck.locX && node.locY == nodeToCheck.locY) {
+	// 		presenter.UpdateLocDownTree(node.parent, shiftX);
+	// 		presenter.UpdateLocDownTree(nodeToCheck.parent, -shiftX);
+	// 	} else {
+	// 		$.each(nodeToCheck.children(), function(index, child) {
+	// 			presenter.FixOverlapInTree(node, child);
+	// 		})
+	// 	}
+	// },
 	'UpdateLocDownTree': function(node, shiftX) {
 		node.locX += shiftX;
 		$.each(node.children(), function(index, child) {
 			presenter.UpdateLocDownTree(child, shiftX);
 		})
 	},
+	// 'UpdateLocUpTree': function(node, shiftX) {
+	// 	if (!(node === rootNode)) {
+	// 		console.log(node.value);
+	// 		node.locX += shiftX;
+ // 			presenter.UpdateLocUpTree(node.parent, shiftX);
+ // 		}
+	// },
 	'findParentFromValue': function(node, value) {
 		model.nodesToAnimate.push(node);
-		if (value < node.value || node.value == value) {
+		if (value < node.value) {
 			if (!node.leftNode) {
 				return node;
 			} else {
 				return presenter.findParentFromValue(node.leftNode, value);
 			}
-		} else if (value > node.value) {
+		} else {
 			if (!node.rightNode) {
 				return node;
 			} else {
@@ -117,14 +162,7 @@ presenter = {
 	}
 }
 
-view = {
-	// 'init': function() {
-	// 	var ctx = d3.select("#canvas")
-	// 		.attr("width", window.innerWidth)
-	// 		.attr("height", window.innerHeight - 50)
-	// 		.call(d3.behavior.zoom().scaleExtent([1, 8]).on("zoom", view.zoom))
-	// 		.node().getContext("2d");
-	// },
+var view = {
 	'addNode': function(numbersToAdd) {
 		if (numbersToAdd) { value = numbersToAdd.pop(); } else {
 			var input = document.getElementById('addNode'), value = Number(input.value);
@@ -134,7 +172,7 @@ view = {
 			alert("Please enter a value.");
 			return;
 		}
-		var node = presenter.addNodeAndGetXY(value, ctx);
+		var node = presenter.addNode(value, ctx);
 		view.animateNodes(presenter.returnNodesToAnimate(), node, numbersToAdd);
 	},
 	'draw':	function() {
@@ -160,7 +198,6 @@ view = {
 		ctx.fill();
 		ctx.stroke();
 
-		//ctx = canvas.getContext('2d');
 		ctx.font = node.font;
 		ctx.fillStyle = node.fillStyleText;
 		ctx.textAlign = 'center';
@@ -264,12 +301,10 @@ var formFunctions = {
 
 $('.form-inline').on('submit', function (event) {
 	event.preventDefault;
-	try {
+	// try {
 		formFunctions[this.id]();
-	} catch(err) {
-		console.log(err);
-	}
+	// } catch(err) {
+	// 	console.log(err);
+	// }
 	return false;
 });
-
-//view.addNode(10);
