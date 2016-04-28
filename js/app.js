@@ -9,8 +9,10 @@ var bstNode = function(value) {
 	this.locY = 50;
 	this.depth = 0;
 
+	this.size = 18;
 	this.fillStyle = '#0099cc';
 	this.fillStyleText = '#333';
+	this.font = '12pt "Helvetica Neue",Helvetica,Arial,sans-serif';
 }
 
 bstNode.prototype.children = function() {
@@ -39,9 +41,9 @@ bstNode.prototype.children = function() {
 var rootNode = null;
 
 var model = {
-	'pixelOffset': 60,
+	'pixelOffset': 50,
 	'nodesToAnimate': [],
-	'AnimationSpeed': {'speed': 1, 'delay': 250}
+	'animationSpeed': {'speed': 1, 'delay': 250, noAnimation: false}
 }
 
 var presenter = {
@@ -59,41 +61,43 @@ var presenter = {
 	},
 	'addToParent': function(node) {
 		if (node.parent) {
-			//if (node.parent == rootNode) { Xoff = 500; } else { Xoff = 500/node.depth; }//195.639-128.241 * Math.log(node.depth);
+			var parentNode = node.parent, pixelOffset = model.pixelOffset, xOffSet = (pixelOffset * 5 / node.depth);
 			if (node.value >= parentNode.value) {
+				node.locX = parentNode.locX + xOffSet;
 				parentNode.rightNode = node;
 			} else {
+				node.locX = parentNode.locX - xOffSet;
 				parentNode.leftNode = node;
 			}			
 			node.locY = parentNode.locY + pixelOffset;
 			//if (node.depth > 1) { presenter.FixOverlapInTree(parentNode) };
 		}
 	},
-	'FixOverlapInTree': function(node) {
-		var turnNode = presenter.findTurnNode(node);
-		if (turnNode) {
-			presenter.UpdateLocDownTree(turnNode, Math.sign(turnNode.locX - turnNode.parent.locX)*model.pixelOffset);
-		}
-	},
-	'findTurnNode': function(node) {
-		var returnNode = node.parent;
-		if (node.parent.leftNode === node) {
-			while (returnNode !== rootNode) {
-				if (returnNode.parent.rightNode === returnNode) {
-					return returnNode
-				}
-				returnNode = returnNode.parent;
-			}
-		}
-		if (node.parent.rightNode === node) {
-			while (returnNode !== rootNode) {
-				if (returnNode.parent.leftNode === returnNode) {
-					return returnNode
-				}
-				returnNode = returnNode.parent;
-			}
-		}
-	},
+	// 'FixOverlapInTree': function(node) {
+	// 	var turnNode = presenter.findTurnNode(node);
+	// 	if (turnNode) {
+	// 		presenter.UpdateLocDownTree(turnNode, Math.sign(turnNode.locX - turnNode.parent.locX)*model.pixelOffset);
+	// 	}
+	// },
+	// 'findTurnNode': function(node) {
+	// 	var returnNode = node.parent;
+	// 	if (node.parent.leftNode === node) {
+	// 		while (returnNode !== rootNode) {
+	// 			if (returnNode.parent.rightNode === returnNode) {
+	// 				return returnNode
+	// 			}
+	// 			returnNode = returnNode.parent;
+	// 		}
+	// 	}
+	// 	if (node.parent.rightNode === node) {
+	// 		while (returnNode !== rootNode) {
+	// 			if (returnNode.parent.leftNode === returnNode) {
+	// 				return returnNode
+	// 			}
+	// 			returnNode = returnNode.parent;
+	// 		}
+	// 	}
+	// },
 	// 'FixOverlapInTree': function(node, nodeToCheck) {
 	// 	var shiftX = (node.parent.locX - node.locX)
 	// 	if (!(node === nodeToCheck) && node.depth == nodeToCheck.depth
@@ -106,12 +110,12 @@ var presenter = {
 	// 		})
 	// 	}
 	// },
-	'UpdateLocDownTree': function(node, shiftX) {
-		node.locX += shiftX;
-		$.each(node.children(), function(index, child) {
-			presenter.UpdateLocDownTree(child, shiftX);
-		})
-	},
+	// 'UpdateLocDownTree': function(node, shiftX) {
+	// 	node.locX += shiftX;
+	// 	$.each(node.children(), function(index, child) {
+	// 		presenter.UpdateLocDownTree(child, shiftX);
+	// 	})
+	// },
 	// 'UpdateLocUpTree': function(node, shiftX) {
 	// 	if (!(node === rootNode)) {
 	// 		console.log(node.value);
@@ -119,6 +123,21 @@ var presenter = {
  // 			presenter.UpdateLocUpTree(node.parent, shiftX);
  // 		}
 	// },
+	'SearchforNode': function(value) {
+		var node;
+		if (rootNode)  { node = presenter.findParentFromValue(rootNode, value); }
+		if (node && node.value == value) {
+			var i = 0;
+			while (i < 2) {
+				model.nodesToAnimate.push(node); // add Node to list 2x, will animate 3x
+				i++;
+			}			
+			view.animateNodes(model.nodesToAnimate, null, null);
+		} else {
+			model.nodesToAnimate = [];
+			alert('The value ' + String(value) + ' does not exist in the tree.');
+		};
+	},
 	'findParentFromValue': function(node, value) {
 		model.nodesToAnimate.push(node);
 		if (value < node.value) {
@@ -149,16 +168,17 @@ var presenter = {
 		}
 		if (rootNode) { drawDownNodes(rootNode); }
 	},
-	'changeAnimationSpeed': function(value) {
-		if (value > 2) { model.AnimationSpeed.delay = 0; } else
-			{ model.AnimationSpeed.delay = Math.min(0, - 100 * Math.pow(value, 2) + 50 * value + 300); }
-		model.AnimationSpeed.speed = value;
+	'changeAnimationSpeed': function(value, noAnimation) {
+		if (value > 2) { model.animationSpeed.delay = 0; } else
+			{ model.animationSpeed.delay = Math.min(0, - 100 * Math.pow(value, 2) + 50 * value + 300); }
+		model.animationSpeed.speed = value;
+		model.animationSpeed.noAnimation = noAnimation;
 	},
 	'returnNodesToAnimate': function() {
 		return model.nodesToAnimate;
 	},
 	'returnAnimationSpeed': function() {
-		return model.AnimationSpeed;
+		return model.animationSpeed;
 	}
 }
 
@@ -168,10 +188,7 @@ var view = {
 			var input = document.getElementById('addNode'), value = Number(input.value);
 			input.value = '';
 		}
-		if (isNaN(value)) {
-			alert("Please enter a value.");
-			return;
-		}
+		if (view.checkForBadValue(value)) { return; }
 		var node = presenter.addNode(value, ctx);
 		view.animateNodes(presenter.returnNodesToAnimate(), node, numbersToAdd);
 	},
@@ -192,6 +209,11 @@ var view = {
 	},
 	'drawNode': function(node) {
 		ctx.lineWidth = 1.5;
+
+		$.each(node.children(), function(index, child) {
+			view.drawConnection(node, child);
+		})
+
 		ctx.beginPath();
 		ctx.arc(node.locX, node.locY, node.size, 0, 2 * Math.PI);
 		ctx.fillStyle = node.fillStyle;
@@ -205,13 +227,10 @@ var view = {
 		ctx.fillText(String(node.value), node.locX, node.locY);
 
 		ctx.strokeStyle = node.fillStyleText;
-		$.each(node.children(), function(index, child) {
-			view.drawConnection(node, child);
-		})
 	},
 	'drawConnection': function(node, childNode) {
 		ctx.save()
-		ctx.globalCompositeOperation = 'destination-over';
+		//ctx.globalCompositeOperation = 'destination-over';
 		ctx.beginPath();
 		ctx.moveTo(node.locX, node.locY);
 		ctx.lineTo(childNode.locX, childNode.locY);
@@ -236,21 +255,44 @@ var view = {
 			}
 		}
 		function animateNextNode() {
-			if (nodesToAnimate.length > 0 && animationSpeed.speed <= 5) {
+			if (nodesToAnimate.length > 0 && !(animationSpeed.noAnimation)) {
 				var node = nodesToAnimate.shift();
 				speed = animationSpeed.speed;
 				animateNode(node, node.size);
 			} else {
-				presenter.addToParent(nodeToAdd);
+				if (nodeToAdd) { presenter.addToParent(nodeToAdd); }
 				view.draw();
-				setTimeout(function() {
-					if (numbersToAdd && numbersToAdd.length > 0) {
+				if (numbersToAdd && numbersToAdd.length > 0) {
+					setTimeout(function() {
 						view.addNode(numbersToAdd);
-					}
-				}, animationSpeed.delay)
+					}, animationSpeed.delay)
+				}
 			}
 		}
 		animateNextNode();
+	},
+	'addRandoms': function() {
+		var input = document.getElementById('addRandom'), value = Number(input.value);
+		input.value = '';
+
+		if (view.checkForBadValue(value)) { return; }
+
+		var numbersToAdd = [];
+		for (var i = 0; i < value; i++) {
+			numbersToAdd.push(Math.floor((Math.random() * 999) + 1));
+		}
+		presenter.addNextRandom(numbersToAdd);
+	},
+	'SearchforNode': function() {
+		var input = $('#searchForNode'), value = Number(input.val());
+		console.log(value);
+		if (view.checkForBadValue(value)) { return; }
+		if (presenter.returnAnimationSpeed().noAnimation) {
+			alert("Please turn on animation to find a node.");
+			return;
+		}
+		input.val('');
+		presenter.SearchforNode(value);
 	},
 	'resetZoom': function() {
 		lastEvent = null;
@@ -259,29 +301,25 @@ var view = {
 			.node().getContext("2d");
 		view.draw();
 	},
-	'addRandoms': function() {
-		var input = document.getElementById('addRandom'), value = Number(input.value);
-		input.value = '';
-
-		if (!value) {
+	'checkForBadValue': function(value) {
+		if (isNaN(value)) {
 			alert("Please enter a value.");
-			return;
+			return true;
 		}
-		var numbersToAdd = [];
-		for (var i = 0; i < value; i++) {
-			numbersToAdd.push(Math.floor((Math.random() * 999) + 1));
-		}
-		presenter.addNextRandom(numbersToAdd);
+		return false;
 	}
 }
 
-$('#AnimationSpeed').slider({
+$('#animationSpeed').slider({
 	formatter: function(value) {
-		presenter.changeAnimationSpeed(value);
+		var noAnimation = false;
+		var text = value + 'x';
 		if (value > 5) {
-			return 'No Animation';
+			noAnimation = true;
+			text = 'No Animation';
 		}
-		return value + 'x';
+		presenter.changeAnimationSpeed(value, noAnimation);
+		return text;
 	}
 });
 
@@ -294,17 +332,18 @@ var ctx = d3.select("#canvas")
 var lastEvent = null;
 
 var formFunctions = {
-	'AddNodeForm': view.addNode,
-	'ResetZoom': view.resetZoom,
-	'AddRandomForm': view.addRandoms,
+	'addNodeForm': view.addNode,
+	'resetZoom': view.resetZoom,
+	'addRandomForm': view.addRandoms,
+	'searchForNodeForm': view.SearchforNode
 }
 
 $('.form-inline').on('submit', function (event) {
 	event.preventDefault;
-	// try {
+	try {
 		formFunctions[this.id]();
-	// } catch(err) {
-	// 	console.log(err);
-	// }
+	} catch(err) {
+	console.log(err);
+	}
 	return false;
 });

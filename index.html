@@ -65,7 +65,7 @@
               <div class="list-group">
                 <div class="list-group-item active">Menu</div>
                 <div class="list-group-item">
-                    <form class="form-inline" id="AddNodeForm" role="form">
+                    <form class="form-inline" id="addNodeForm" role="form">
                         <div class="form-group">
                             <label for="addNode">Add Node: </label>
                             <input type="number" class="form-control" id="addNode">
@@ -74,7 +74,25 @@
                     </form>
                 </div>
                 <div class="list-group-item">
-                    <form class="form-inline" id="AddRandomForm" role="form">
+                    <form class="form-inline" id="searchForNodeForm" role="form">
+                        <div class="form-group">
+                            <label for="searchForNode">Search for Node: </label>
+                            <input type="number" class="form-control" id="searchForNode">
+                        </div>
+                        <button type="submit" class="btn btn-default">Submit</button>
+                    </form>
+                </div>
+                <div class="list-group-item">
+                    <form class="form-inline" id="deleteNodeForm" role="form">
+                        <div class="form-group">
+                            <label for="deleteNode">Delete Node: </label>
+                            <input type="number" class="form-control" id="deleteNode">
+                        </div>
+                        <button type="submit" class="btn btn-default">Submit</button>
+                    </form>
+                </div>
+                <div class="list-group-item">
+                    <form class="form-inline" id="addRandomForm" role="form">
                         <div class="form-group">
                             <label for="addRandom">Amount of Randoms to Add: </label>
                             <input type="number" class="form-control" id="addRandom">
@@ -83,15 +101,15 @@
                     </form>
                 </div>
                 <div class="list-group-item">
-                    <form class="form-inline" id="AnimationSpeedForm" role="form">
+                    <form class="form-inline" id="animationSpeedForm" role="form">
                         <div class="form-group">
                             <label for="AnimationSpeed">Animation Speed: </label>
-                            <input type="range" id="AnimationSpeed" data-silder-id="AnimationSpeedSlider" data-slider-min="0.1" data-slider-max="5.1" data-slider-step="0.1" data-slider-value="1"/>
+                            <input type="range" id="animationSpeed" data-silder-id="animationSpeedSlider" data-slider-min="0.1" data-slider-max="5.1" data-slider-step="0.1" data-slider-value="1"/>
                         </div>
                     </form>
                 </div>
                 <div class="list-group-item">
-                    <form class="form-inline" id="ResetZoom" role="form">
+                    <form class="form-inline" id="resetZoom" role="form">
                         <button type="submit" class="btn btn-default">Reset Zoom</button>
                     </form>
                 </div>
