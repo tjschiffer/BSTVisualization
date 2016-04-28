@@ -43,7 +43,7 @@ bstNode.prototype.children = function() {
 var rootNode = null;
 
 var model = {
-	'pixelOffset': 26,
+	'pixelOffset': 27,
 	'nodesToAnimate': [],
 	'animationSpeed': {'speed': 1, 'delay': 250, noAnimation: false}
 }
@@ -78,13 +78,12 @@ var presenter = {
 				}
 			} else {
 				parentNode.leftNode = node;
-				console.log(node.depth == 1);
 				if (node.depth == 1) {
 					node.inRightBranch = false;
 					node.xOffset = -1;
 				} else {
 					if (node.inRightBranch) {
-						node.xOffset = (parentNode.xOffset * 2) - 1
+						node.xOffset = (parentNode.xOffset * 2) - 1;
 					} else {
 						node.xOffset = (parentNode.xOffset * 2);
 					}
@@ -146,8 +145,10 @@ var presenter = {
  // 		}
 	// },
 	'SearchforNode': function(value) {
+		model.nodesToAnimate = [];
+		console.log(value);
 		var node;
-		if (rootNode)  { node = presenter.findParentFromValue(rootNode, value); }
+		if (rootNode)  { node = presenter.searchDownTree(rootNode, value); }
 		if (node && node.value == value) {
 			var i = 0;
 			while (i < 2) {
@@ -159,6 +160,27 @@ var presenter = {
 			model.nodesToAnimate = [];
 			alert('The value ' + String(value) + ' does not exist in the tree.');
 		};
+	},
+	'searchDownTree': function(node, value) {
+		model.nodesToAnimate.push(node);
+		if (value == node.value) {
+			return node;
+		} else if (value < node.value) {
+			if (node.leftNode == null) {
+				return null;
+			}
+			else {
+				return presenter.searchDownTree(node.leftNode, value);
+			}
+		} else if (value > node.value) {
+			if (node.rightNode == null) {
+				return null;
+			}
+			else {
+				return presenter.searchDownTree(node.rightNode, value);
+			}
+		}
+		return false;
 	},
 	'findParentFromValue': function(node, value) {
 		model.nodesToAnimate.push(node);
@@ -307,7 +329,6 @@ var view = {
 	},
 	'SearchforNode': function() {
 		var input = $('#searchForNode'), value = Number(input.val());
-		console.log(value);
 		if (view.checkForBadValue(value)) { return; }
 		if (presenter.returnAnimationSpeed().noAnimation) {
 			alert("Please turn on animation to find a node.");
@@ -348,7 +369,7 @@ $('#animationSpeed').slider({
 var ctx = d3.select("#canvas")
 	.attr("width", window.innerWidth)
 	.attr("height", window.innerHeight - 50)
-	.call(d3.behavior.zoom().scaleExtent([0.5, 10]).on("zoom", view.draw))
+	.call(d3.behavior.zoom().scaleExtent([0.1, 10]).on("zoom", view.draw))
 	.node().getContext("2d");
 
 var lastEvent = null;
