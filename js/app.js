@@ -8,11 +8,13 @@ var bstNode = function(value) {
 	this.locX = null;
 	this.locY = 50;
 	this.depth = 0;
+	this.inRightBranch = true;
+	this.xOffset = 1;
 
-	this.size = 18;
+	this.size = 13;
 	this.fillStyle = '#0099cc';
 	this.fillStyleText = '#333';
-	this.font = '12pt "Helvetica Neue",Helvetica,Arial,sans-serif';
+	this.font = '13px "Helvetica Neue",Helvetica,Arial,sans-serif';
 }
 
 bstNode.prototype.children = function() {
@@ -41,7 +43,7 @@ bstNode.prototype.children = function() {
 var rootNode = null;
 
 var model = {
-	'pixelOffset': 50,
+	'pixelOffset': 26,
 	'nodesToAnimate': [],
 	'animationSpeed': {'speed': 1, 'delay': 250, noAnimation: false}
 }
@@ -61,15 +63,35 @@ var presenter = {
 	},
 	'addToParent': function(node) {
 		if (node.parent) {
-			var parentNode = node.parent, pixelOffset = model.pixelOffset, xOffSet = (pixelOffset * 5 / node.depth);
+			var parentNode = node.parent, pixelOffset = model.pixelOffset, xOffset = 1;
+			node.inRightBranch = node.parent.inRightBranch;
+			//node.xOffset = (Math.abs(parent.offset) + 1)*Math.sign(parent.offset);
 			if (node.value >= parentNode.value) {
-				node.locX = parentNode.locX + xOffSet;
 				parentNode.rightNode = node;
+				if (node.depth == 1) { node.xOffset = 1 }
+					else {
+				if (node.inRightBranch) {
+						node.xOffset = parentNode.xOffset * 2;
+					} else {
+						node.xOffset = (parentNode.xOffset * 2) + 1;
+					}
+				}
 			} else {
-				node.locX = parentNode.locX - xOffSet;
 				parentNode.leftNode = node;
-			}			
-			node.locY = parentNode.locY + pixelOffset;
+				console.log(node.depth == 1);
+				if (node.depth == 1) {
+					node.inRightBranch = false;
+					node.xOffset = -1;
+				} else {
+					if (node.inRightBranch) {
+						node.xOffset = (parentNode.xOffset * 2) - 1
+					} else {
+						node.xOffset = (parentNode.xOffset * 2);
+					}
+				}
+			}
+			node.locX = rootNode.locX + pixelOffset * node.xOffset;		
+			node.locY = rootNode.locY + 3*pixelOffset * node.depth;
 			//if (node.depth > 1) { presenter.FixOverlapInTree(parentNode) };
 		}
 	},
