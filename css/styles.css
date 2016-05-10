@@ -1,6 +1,7 @@
 html,
 body {
   overflow-x: hidden; /* Prevent scroll on narrow devices */
+  width: 100%;
   height: 100%;
 }
 
@@ -10,7 +11,7 @@ body {
 }
 
 .sidebar {
-	margin-top: 5px;
+	padding-top: 15px;
 }
 
 .list-group, .btn {
@@ -32,8 +33,19 @@ body {
 	margin-left: 10px;
 }*/
 
-#canvas {
+.svg {
 	position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
+.svg .nodeLine {
+  stroke: #000;
+  stroke-width: 2;
+}
+
+text {
+  text-anchor: middle;
 }
 
 .navbar-inverse .navbar-brand {
@@ -75,11 +87,11 @@ body {
   }
 
   .row-offcanvas-left {
-    left: 420px;
+    left: 415px;
   }
 
   .row-offcanvas-left .sidebar-offcanvas {
-    left: -420px;
+    left: -415px;
   }
 
   .row-offcanvas-left.active {

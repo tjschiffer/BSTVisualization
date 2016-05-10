@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 var bstNode = function(value) {
 	this.value = value;
@@ -11,10 +11,11 @@ var bstNode = function(value) {
 	this.inRightBranch = true;
 	this.xOffset = 1;
 
-	this.size = 13;
+	this.id = this.depth + '_' + value;
+
+	this.size = 14;
 	this.fillStyle = '#0099cc';
-	this.fillStyleText = '#333';
-	this.font = '13px "Helvetica Neue",Helvetica,Arial,sans-serif';
+	this.fillStyleText = '#000';
 }
 
 bstNode.prototype.children = function() {
@@ -27,8 +28,6 @@ bstNode.prototype.children = function() {
 	}
 	return children;
 }
-
-
 
 // bstNode.prototype.upBranch = function(node) {
 // 	if (this.parent === node) {
@@ -43,20 +42,21 @@ bstNode.prototype.children = function() {
 var rootNode = null;
 
 var model = {
-	'pixelOffset': 27,
+	'pixelOffset': 30,
 	'nodesToAnimate': [],
-	'animationSpeed': {'speed': 1, 'delay': 250, noAnimation: false}
+	'animationSpeed': {'speed': 0.05, 'delay': 250, noAnimation: false}
 }
 
 var presenter = {
-	'addNode': function(value, ctx) {
+	'addNode': function(value) {
 		var node = new bstNode(value);
 		if (!rootNode) {
 			rootNode = node;
-			node.locX = ctx.canvas.width / 2;
+			node.locX = $('#svg').width() / 2;
 		} else {
 			var parentNode = presenter.findParentFromValue(rootNode, value);
 			node.depth = parentNode.depth + 1;
+			node.id = node.depth + '_' + value;
 			node.parent = parentNode;
 		}
 		return node;
@@ -146,7 +146,6 @@ var presenter = {
 	// },
 	'SearchforNode': function(value) {
 		model.nodesToAnimate = [];
-		console.log(value);
 		var node;
 		if (rootNode)  { node = presenter.searchDownTree(rootNode, value); }
 		if (node && node.value == value) {
@@ -203,20 +202,12 @@ var presenter = {
 			view.addNode(numbersToAdd);
 		}
 	},
-	'redrawBST': function() {
-		function drawDownNodes(node) {
-			view.drawNode(node);
-			$.each(node.children(), function(index, child) {
-				drawDownNodes(child);
-			})
-		}
-		if (rootNode) { drawDownNodes(rootNode); }
-	},
 	'changeAnimationSpeed': function(value, noAnimation) {
 		if (value > 2) { model.animationSpeed.delay = 0; } else
 			{ model.animationSpeed.delay = Math.min(0, - 100 * Math.pow(value, 2) + 50 * value + 300); }
-		model.animationSpeed.speed = value;
+		model.animationSpeed.speed = 0.05 * value;
 		model.animationSpeed.noAnimation = noAnimation;
+		if (noAnimation) { model.nodesToAnimate = []; }
 	},
 	'returnNodesToAnimate': function() {
 		return model.nodesToAnimate;
@@ -233,79 +224,69 @@ var view = {
 			input.value = '';
 		}
 		if (view.checkForBadValue(value)) { return; }
-		var node = presenter.addNode(value, ctx);
+		var node = presenter.addNode(value);
 		view.animateNodes(presenter.returnNodesToAnimate(), node, numbersToAdd);
 	},
 	'draw':	function() {
-		ctx.save();
-		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
 		if (d3.event) {
-			ctx.translate(d3.event.translate[0], d3.event.translate[1]);
-			ctx.scale(d3.event.scale, d3.event.scale);
 			lastEvent = d3.event;
-		} else if (lastEvent) {
-			ctx.translate(lastEvent.translate[0], lastEvent.translate[1]);
-			ctx.scale(lastEvent.scale, lastEvent.scale);
 		}
-		presenter.redrawBST();
-		ctx.restore();
+		if (lastEvent) {
+			svg.attr('transform', 'translate(' + lastEvent.translate + ')scale(' + lastEvent.scale + ')');
+		}
 	},
 	'drawNode': function(node) {
-		ctx.lineWidth = 1.5;
 
-		$.each(node.children(), function(index, child) {
-			view.drawConnection(node, child);
-		})
+		var newNode = svg.insert('g',':first-child')
+			.attr({'class': 'node', 'id': node.id})
+			.attr('transform', 'translate(' + node.locX + ',' + node.locY + ')');
 
-		ctx.beginPath();
-		ctx.arc(node.locX, node.locY, node.size, 0, 2 * Math.PI);
-		ctx.fillStyle = node.fillStyle;
-		ctx.fill();
-		ctx.stroke();
+		if (node.parent) {
+			view.drawConnection(newNode, node.parent, node);
+		}
 
-		ctx.font = node.font;
-		ctx.fillStyle = node.fillStyleText;
-		ctx.textAlign = 'center';
-		ctx.textBaseline = 'middle';
-		ctx.fillText(String(node.value), node.locX, node.locY);
+		var nodeWrap = newNode.append('g').attr('class', 'nodeWrap');
 
-		ctx.strokeStyle = node.fillStyleText;
+		nodeWrap.append('circle')
+			.attr('r', node.size)
+			.style({'fill': node.fillStyle, 'stroke': node.fillStyleText, 'stroke-width': 2});
+
+		nodeWrap.append('text')
+			.attr('dy', '.3em')
+			.text(node.value);
+
 	},
-	'drawConnection': function(node, childNode) {
-		ctx.save()
-		//ctx.globalCompositeOperation = 'destination-over';
-		ctx.beginPath();
-		ctx.moveTo(node.locX, node.locY);
-		ctx.lineTo(childNode.locX, childNode.locY);
-		ctx.stroke();
-		ctx.restore()
+	'drawConnection': function(newNode, node, childNode) {
+		newNode.append('line')
+			.attr({'x1': node.locX - childNode.locX, 'y1': node.locY - childNode.locY, 'x2': 0,
+				'y2': 0, 'class': 'nodeLine'})
+
 	},
 	'animateNodes': function(nodesToAnimate, nodeToAdd, numbersToAdd) {
 		var animationSpeed = presenter.returnAnimationSpeed();
-		//var initalSize = node.size;
 		var speed = animationSpeed.speed;
-		function animateNode(node, initalSize) {
-			node.size += speed;
-			if (node.size > (initalSize * 1.5)) {
+		function animateNode(domNode, scale) {
+			scale += speed;
+			domNode.attr('transform', 'scale(' + scale + ')');
+			if (scale > 1.5) {
 				speed *= -1;
 			}
-			if (node.size <= initalSize) { 
-				node.size = initalSize;
+			if (scale <= 1) { 
+				domNode.attr('transform', null);
 				animateNextNode();
 			} else {
-				view.draw();
-				requestAnimationFrame(function() { animateNode(node, initalSize); });
+				requestAnimationFrame(function() { animateNode(domNode, scale); });
 			}
 		}
 		function animateNextNode() {
 			if (nodesToAnimate.length > 0 && !(animationSpeed.noAnimation)) {
-				var node = nodesToAnimate.shift();
+				var domNode = $('#' + nodesToAnimate.shift().id + ' > .nodeWrap');
 				speed = animationSpeed.speed;
-				animateNode(node, node.size);
+				animateNode(domNode, 1);
 			} else {
 				if (nodeToAdd) { presenter.addToParent(nodeToAdd); }
-				view.draw();
+				view.drawNode(nodeToAdd);
 				if (numbersToAdd && numbersToAdd.length > 0) {
 					setTimeout(function() {
 						view.addNode(numbersToAdd);
@@ -327,7 +308,7 @@ var view = {
 		}
 		presenter.addNextRandom(numbersToAdd);
 	},
-	'SearchforNode': function() {
+	'searchForNode': function() {
 		var input = $('#searchForNode'), value = Number(input.val());
 		if (view.checkForBadValue(value)) { return; }
 		if (presenter.returnAnimationSpeed().noAnimation) {
@@ -339,14 +320,11 @@ var view = {
 	},
 	'resetZoom': function() {
 		lastEvent = null;
-		ctx = d3.select("#canvas")
-			.call(d3.behavior.zoom().scaleExtent([0.5, 10]).on("zoom", view.draw))
-			.node().getContext("2d");
-		view.draw();
+		svg.attr('transform', null);
 	},
 	'checkForBadValue': function(value) {
 		if (isNaN(value)) {
-			alert("Please enter a value.");
+			alert('Please enter a value.');
 			return true;
 		}
 		return false;
@@ -366,11 +344,13 @@ $('#animationSpeed').slider({
 	}
 });
 
-var ctx = d3.select("#canvas")
-	.attr("width", window.innerWidth)
-	.attr("height", window.innerHeight - 50)
-	.call(d3.behavior.zoom().scaleExtent([0.1, 10]).on("zoom", view.draw))
-	.node().getContext("2d");
+var svg = d3.select('#svg')
+	// .attr("width", window.innerWidth)
+	// .attr("height", window.innerHeight - 50)
+	.call(d3.behavior.zoom().scaleExtent([0.5, 10]).on('zoom', view.draw))
+	.append('g')
+	.append('g');
+	//.node().getContext('2d');
 
 var lastEvent = null;
 
@@ -378,7 +358,8 @@ var formFunctions = {
 	'addNodeForm': view.addNode,
 	'resetZoom': view.resetZoom,
 	'addRandomForm': view.addRandoms,
-	'searchForNodeForm': view.SearchforNode
+	'searchForNodeForm': view.searchForNode,
+	'deleteNodeForm': view.deleteNode
 }
 
 $('.form-inline').on('submit', function (event) {
