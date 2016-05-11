@@ -285,8 +285,10 @@ var view = {
 				speed = animationSpeed.speed;
 				animateNode(domNode, 1);
 			} else {
-				if (nodeToAdd) { presenter.addToParent(nodeToAdd); }
-				view.drawNode(nodeToAdd);
+				if (nodeToAdd) {
+					presenter.addToParent(nodeToAdd); 
+					view.drawNode(nodeToAdd);
+				}
 				if (numbersToAdd && numbersToAdd.length > 0) {
 					setTimeout(function() {
 						view.addNode(numbersToAdd);
