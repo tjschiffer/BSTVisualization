@@ -44,7 +44,7 @@ var rootNode = null;
 var model = {
 	'pixelOffset': 30,
 	'nodesToAnimate': [],
-	'animationSpeed': {'speed': 0.05, 'delay': 250, noAnimation: false}
+	'animationSpeed': {'speed': 150, 'delay': 250, noAnimation: false}
 }
 
 var presenter = {
@@ -151,17 +151,17 @@ var presenter = {
 		if (node && node.value == value) {
 			var i = 0;
 			while (i < 2) {
-				model.nodesToAnimate.push(node); // add Node to list 2x, will animate 3x
+				model.nodesToAnimate.push({'node':node,'animationType':'pop'}); // add Node to list 2x, will animate 3x
 				i++;
 			}			
-			view.animateNodes(model.nodesToAnimate, null, null);
+			return node;
 		} else {
 			model.nodesToAnimate = [];
 			alert('The value ' + String(value) + ' does not exist in the tree.');
 		};
 	},
 	'searchDownTree': function(node, value) {
-		model.nodesToAnimate.push(node);
+		model.nodesToAnimate.push({'node':node,'animationType':'pop'});
 		if (value == node.value) {
 			return node;
 		} else if (value < node.value) {
@@ -181,8 +181,12 @@ var presenter = {
 		}
 		return false;
 	},
+	'deleteNode': function(value) {
+		var deleteNode = presenter.searchForNode(value);
+
+	},
 	'findParentFromValue': function(node, value) {
-		model.nodesToAnimate.push(node);
+		model.nodesToAnimate.push({'node':node,'animationType':'pop'});
 		if (value < node.value) {
 			if (!node.leftNode) {
 				return node;
@@ -205,7 +209,7 @@ var presenter = {
 	'changeAnimationSpeed': function(value, noAnimation) {
 		if (value > 2) { model.animationSpeed.delay = 0; } else
 			{ model.animationSpeed.delay = Math.min(0, - 100 * Math.pow(value, 2) + 50 * value + 300); }
-		model.animationSpeed.speed = 0.05 * value;
+		model.animationSpeed.speed = 150 * Math.pow(value, -1);
 		model.animationSpeed.noAnimation = noAnimation;
 		if (noAnimation) { model.nodesToAnimate = []; }
 	},
@@ -220,8 +224,8 @@ var presenter = {
 var view = {
 	'addNode': function(numbersToAdd) {
 		if (numbersToAdd) { value = numbersToAdd.pop(); } else {
-			var input = document.getElementById('addNode'), value = Number(input.value);
-			input.value = '';
+			var input = $('#addNode'), value = Number(input.val());
+			input.val('');
 		}
 		if (view.checkForBadValue(value)) { return; }
 		var node = presenter.addNode(value);
@@ -246,15 +250,16 @@ var view = {
 			view.drawConnection(newNode, node.parent, node);
 		}
 
-		var nodeWrap = newNode.append('g').attr('class', 'nodeWrap');
+		var nodeWrap = newNode.append('g').attr({'class':'nodeWrap', 'transform':'scale(0)'});
 
 		nodeWrap.append('circle')
 			.attr('r', node.size)
 			.style({'fill': node.fillStyle, 'stroke': node.fillStyleText, 'stroke-width': 2});
 
 		nodeWrap.append('text')
-			.attr('dy', '.3em')
+			.attr('dy', '.35em')
 			.text(node.value);
+		return nodeWrap;
 
 	},
 	'drawConnection': function(newNode, node, childNode) {
@@ -266,41 +271,51 @@ var view = {
 	'animateNodes': function(nodesToAnimate, nodeToAdd, numbersToAdd) {
 		var animationSpeed = presenter.returnAnimationSpeed();
 		var speed = animationSpeed.speed;
-		function animateNode(domNode, scale) {
-			scale += speed;
-			domNode.attr('transform', 'scale(' + scale + ')');
-			if (scale > 1.5) {
-				speed *= -1;
-			}
-			if (scale <= 1) { 
-				domNode.attr('transform', null);
-				animateNextNode();
-			} else {
-				requestAnimationFrame(function() { animateNode(domNode, scale); });
+
+		var animate = {
+			'pop': function(nodeId) {
+				var domNode = $('#' + nodeId + ' > .nodeWrap');
+				d3.select(domNode.get(0)).transition()
+					.attr('transform', 'scale(1.5)')
+					.duration(speed)
+					.transition()
+					.attr('transform', 'scale(1)')
+					.duration(speed)
+					.transition()
+					.attr('transform', null)
+					.duration(0)
+					.each('end', animateNextNode);
 			}
 		}
+
 		function animateNextNode() {
+			animationSpeed = presenter.returnAnimationSpeed();
+			speed = animationSpeed.speed;
 			if (nodesToAnimate.length > 0 && !(animationSpeed.noAnimation)) {
-				var domNode = $('#' + nodesToAnimate.shift().id + ' > .nodeWrap');
-				speed = animationSpeed.speed;
-				animateNode(domNode, 1);
+				var animation = nodesToAnimate.shift()
+				animate[animation.animationType](animation.node.id);
 			} else {
 				if (nodeToAdd) {
 					presenter.addToParent(nodeToAdd); 
-					view.drawNode(nodeToAdd);
-				}
-				if (numbersToAdd && numbersToAdd.length > 0) {
-					setTimeout(function() {
-						view.addNode(numbersToAdd);
-					}, animationSpeed.delay)
+					var nodeWrap = view.drawNode(nodeToAdd);
+					nodeWrap.transition()
+						.attr('transform', 'scale(1)')
+						.duration(speed)
+						.each('end', function() {
+							if (numbersToAdd && numbersToAdd.length > 0) {
+								setTimeout(function() {
+									view.addNode(numbersToAdd);
+								}, animationSpeed.delay)
+							}
+						});
 				}
 			}
 		}
 		animateNextNode();
 	},
 	'addRandoms': function() {
-		var input = document.getElementById('addRandom'), value = Number(input.value);
-		input.value = '';
+		var input = $('#addRandom'), value = Number(input.val());
+		input.val('');
 
 		if (view.checkForBadValue(value)) { return; }
 
@@ -319,6 +334,14 @@ var view = {
 		}
 		input.val('');
 		presenter.SearchforNode(value);
+		view.animateNodes(presenter.returnNodesToAnimate(), null, null);
+	},
+	'deleteNode': function() {
+		var input = $('#deleteNode'), value = Number(input.val());
+		if (view.checkForBadValue(value)) { return; }
+		input.val('');
+
+		presenter.deleteNode(value);
 	},
 	'resetZoom': function() {
 		lastEvent = null;
