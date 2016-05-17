@@ -1,5 +1,15 @@
 'use strict';
 
+function generateUUID() { // https://jsfiddle.net/briguy37/2MVFd/
+	var d = new Date().getTime();
+	var uuid = 'Nxxxxxxxx_xxxx_4xxx_yxxx_xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+		var r = (d + Math.random()*16)%16 | 0;
+		d = Math.floor(d/16);
+		return (c=='x' ? r : (r&0x3|0x8)).toString(16);
+	});
+	return uuid;
+}
+
 var bstNode = function(value) {
 	this.value = value;
 	this.leftNode = null;
@@ -11,7 +21,7 @@ var bstNode = function(value) {
 	this.inRightBranch = true;
 	this.xOffset = 1;
 
-	this.id = this.depth + '_' + value;
+	this.id = generateUUID();
 
 	this.size = 14;
 	this.fillStyle = '#0099cc';
@@ -25,6 +35,23 @@ bstNode.prototype.children = function() {
 	}
 	if (this.rightNode) {
 		children.push(this.rightNode);
+	}
+	return children;
+}
+
+bstNode.prototype.allChildren = function() {
+	var children = [];
+	if (this.leftNode) {
+		children.push(this.leftNode);
+		$.each(this.leftNode.allChildren(), function(index, child) {
+			children.push(child);
+		})
+	}
+	if (this.rightNode) {
+		children.push(this.rightNode);
+		$.each(this.rightNode.allChildren(), function(index, child) {
+			children.push(child);
+		})
 	}
 	return children;
 }
@@ -56,10 +83,9 @@ var presenter = {
 		} else {
 			var parentNode = presenter.findParentFromValue(rootNode, value);
 			node.depth = parentNode.depth + 1;
-			node.id = node.depth + '_' + value;
 			node.parent = parentNode;
 		}
-		return node;
+		model.nodesToAnimate.push([{'node':node,'animationType':'add'}])
 	},
 	'addToParent': function(node) {
 		if (node.parent) {
@@ -90,68 +116,17 @@ var presenter = {
 				}
 			}
 			node.locX = rootNode.locX + pixelOffset * node.xOffset;		
-			node.locY = rootNode.locY + 3*pixelOffset * node.depth;
-			//if (node.depth > 1) { presenter.FixOverlapInTree(parentNode) };
+			node.locY = rootNode.locY + 3 * pixelOffset * node.depth;
 		}
 	},
-	// 'FixOverlapInTree': function(node) {
-	// 	var turnNode = presenter.findTurnNode(node);
-	// 	if (turnNode) {
-	// 		presenter.UpdateLocDownTree(turnNode, Math.sign(turnNode.locX - turnNode.parent.locX)*model.pixelOffset);
-	// 	}
-	// },
-	// 'findTurnNode': function(node) {
-	// 	var returnNode = node.parent;
-	// 	if (node.parent.leftNode === node) {
-	// 		while (returnNode !== rootNode) {
-	// 			if (returnNode.parent.rightNode === returnNode) {
-	// 				return returnNode
-	// 			}
-	// 			returnNode = returnNode.parent;
-	// 		}
-	// 	}
-	// 	if (node.parent.rightNode === node) {
-	// 		while (returnNode !== rootNode) {
-	// 			if (returnNode.parent.leftNode === returnNode) {
-	// 				return returnNode
-	// 			}
-	// 			returnNode = returnNode.parent;
-	// 		}
-	// 	}
-	// },
-	// 'FixOverlapInTree': function(node, nodeToCheck) {
-	// 	var shiftX = (node.parent.locX - node.locX)
-	// 	if (!(node === nodeToCheck) && node.depth == nodeToCheck.depth
-	// 		&& node.locX == nodeToCheck.locX && node.locY == nodeToCheck.locY) {
-	// 		presenter.UpdateLocDownTree(node.parent, shiftX);
-	// 		presenter.UpdateLocDownTree(nodeToCheck.parent, -shiftX);
-	// 	} else {
-	// 		$.each(nodeToCheck.children(), function(index, child) {
-	// 			presenter.FixOverlapInTree(node, child);
-	// 		})
-	// 	}
-	// },
-	// 'UpdateLocDownTree': function(node, shiftX) {
-	// 	node.locX += shiftX;
-	// 	$.each(node.children(), function(index, child) {
-	// 		presenter.UpdateLocDownTree(child, shiftX);
-	// 	})
-	// },
-	// 'UpdateLocUpTree': function(node, shiftX) {
-	// 	if (!(node === rootNode)) {
-	// 		console.log(node.value);
-	// 		node.locX += shiftX;
- // 			presenter.UpdateLocUpTree(node.parent, shiftX);
- // 		}
-	// },
-	'SearchforNode': function(value) {
+	'searchForNode': function(value) {
 		model.nodesToAnimate = [];
 		var node;
 		if (rootNode)  { node = presenter.searchDownTree(rootNode, value); }
 		if (node && node.value == value) {
 			var i = 0;
 			while (i < 2) {
-				model.nodesToAnimate.push({'node':node,'animationType':'pop'}); // add Node to list 2x, will animate 3x
+				model.nodesToAnimate.push([{'node':node,'animationType':'pop'}]); // add Node to list 2x, will animate 3x
 				i++;
 			}			
 			return node;
@@ -161,7 +136,7 @@ var presenter = {
 		};
 	},
 	'searchDownTree': function(node, value) {
-		model.nodesToAnimate.push({'node':node,'animationType':'pop'});
+		model.nodesToAnimate.push([{'node':node,'animationType':'pop'}]);
 		if (value == node.value) {
 			return node;
 		} else if (value < node.value) {
@@ -183,10 +158,45 @@ var presenter = {
 	},
 	'deleteNode': function(value) {
 		var deleteNode = presenter.searchForNode(value);
+		model.nodesToAnimate.push([{'node':deleteNode,'animationType':'delete'}])
+		var children = deleteNode.children();
+		var childNodesToAnimate = [];
+		var replaceNode = null;
+		if (children.length == 1) {
+			replaceNode = children[0];
+			
+			replaceNode.depth -= 1;
+			replaceNode.locX = deleteNode.locX;
+			replaceNode.locY = deleteNode.locY;
+			replaceNode.parent = deleteNode.parent;
+			presenter.addToParent(replaceNode);
+			childNodesToAnimate.push({'node':replaceNode,'animationType':'move',
+				'x':deleteNode.locX, 'y':deleteNode.locY, 'drawConnection':true});
 
+			$.each(replaceNode.allChildren(), function(index, node) {
+				node.depth -= 1;
+				presenter.addToParent(node);
+				childNodesToAnimate.push({'node':node,'animationType':'move',
+				'x':node.locX, 'y':node.locY, 'lineAnimation':{'x1': node.parent.locX - node.locX, 
+					'y1': node.parent.locY - node.locY, 'x2': 0, 'y2': 0}});
+			});
+		}
+		if (deleteNode.parent) {
+			if (deleteNode.parent.leftNode === deleteNode) {
+				deleteNode.parent.leftNode = replaceNode;
+			} else {
+				deleteNode.parent.rightNode = replaceNode;
+			}
+		} else {
+			rootNode = replaceNode;
+			replaceNode.parent = null;
+		}
+
+		model.nodesToAnimate.push(childNodesToAnimate);
+		deleteNode = null;
 	},
 	'findParentFromValue': function(node, value) {
-		model.nodesToAnimate.push({'node':node,'animationType':'pop'});
+		model.nodesToAnimate.push([{'node':node,'animationType':'pop'}]);
 		if (value < node.value) {
 			if (!node.leftNode) {
 				return node;
@@ -218,6 +228,9 @@ var presenter = {
 	},
 	'returnAnimationSpeed': function() {
 		return model.animationSpeed;
+	},
+	'returnChildren': function(node) {
+		return node.children();
 	}
 }
 
@@ -228,8 +241,8 @@ var view = {
 			input.val('');
 		}
 		if (view.checkForBadValue(value)) { return; }
-		var node = presenter.addNode(value);
-		view.animateNodes(presenter.returnNodesToAnimate(), node, numbersToAdd);
+		presenter.addNode(value);
+		view.animateNodes(presenter.returnNodesToAnimate(), numbersToAdd);
 	},
 	'draw':	function() {
 
@@ -246,9 +259,7 @@ var view = {
 			.attr({'class': 'node', 'id': node.id})
 			.attr('transform', 'translate(' + node.locX + ',' + node.locY + ')');
 
-		if (node.parent) {
-			view.drawConnection(newNode, node.parent, node);
-		}
+		view.drawConnection(node.parent, node);
 
 		var nodeWrap = newNode.append('g').attr({'class':'nodeWrap', 'transform':'scale(0)'});
 
@@ -262,20 +273,22 @@ var view = {
 		return nodeWrap;
 
 	},
-	'drawConnection': function(newNode, node, childNode) {
-		newNode.append('line')
-			.attr({'x1': node.locX - childNode.locX, 'y1': node.locY - childNode.locY, 'x2': 0,
-				'y2': 0, 'class': 'nodeLine'})
+	'drawConnection': function(node, childNode) {
+		if (node) {
+			d3.select('#' + childNode.id).insert('line',':first-child')
+				.attr({'x1': node.locX - childNode.locX, 'y1': node.locY - childNode.locY, 'x2': 0,
+					'y2': 0, 'class': 'nodeLine'});
+		}
 
 	},
-	'animateNodes': function(nodesToAnimate, nodeToAdd, numbersToAdd) {
+	'animateNodes': function(nodesToAnimate, numbersToAdd) {
 		var animationSpeed = presenter.returnAnimationSpeed();
 		var speed = animationSpeed.speed;
 
 		var animate = {
-			'pop': function(nodeId) {
-				var domNode = $('#' + nodeId + ' > .nodeWrap');
-				d3.select(domNode.get(0)).transition()
+			'pop': function(animation) {
+				d3.select('#' + animation.node.id + ' > .nodeWrap')
+					.transition()
 					.attr('transform', 'scale(1.5)')
 					.duration(speed)
 					.transition()
@@ -284,7 +297,58 @@ var view = {
 					.transition()
 					.attr('transform', null)
 					.duration(0)
+					.each('end', function () {
+						animateNextNodeSublist(nodesToAnimate);
+					});
+			},
+			'delete': function(animation) {
+				d3.select('#' + animation.node.id + ' > .nodeWrap')
+					.transition()
+					.attr('transform', 'scale(0)')
+					.duration(speed)
 					.each('end', animateNextNode);
+				$('#' + animation.node.id).remove();
+				$.each(presenter.returnChildren(animation.node), function(index, node) {
+					$('#' + node.id + ' > .nodeLine').remove();
+				})
+			},
+			'move': function(animation) {
+				d3.select('#' + animation.node.id).transition()
+					.attr('transform', 'translate(' + animation.x + ',' + animation.y + ')')
+					.duration(speed)
+					.each('end', function () {
+						if (animation.drawConnection) {
+							view.drawConnection(animation.node.parent, animation.node);
+						}
+					});
+				if (animation.lineAnimation) {
+					d3.select('#' + animation.node.id + ' > .nodeLine').transition()
+					.attr({'x1': animation.lineAnimation.x1, 'y1': animation.lineAnimation.y1, 
+						'x2': animation.lineAnimation.x2, 'y2': animation.lineAnimation.y2})
+					.duration(speed)
+				}
+				animateNextNodeSublist(nodesToAnimate)
+			},
+			'add': function(animation) {
+				presenter.addToParent(animation.node); 
+				var nodeWrap = view.drawNode(animation.node);
+				nodeWrap.transition()
+					.attr('transform', 'scale(1)')
+					.duration(speed)
+					.each('end', animateNextNode);
+			}
+		}
+
+		function animateNextNodeSublist(nodesToAnimate) {
+			var nextAnimation;
+			if (nodesToAnimate.length > 0) {
+				nextAnimation = nodesToAnimate[0].pop();
+				if (nodesToAnimate[0].length < 1) { nodesToAnimate.shift(); }
+			}
+			if (nextAnimation) {
+				animate[nextAnimation.animationType](nextAnimation); 
+			} else {
+				animateNextNode();
 			}
 		}
 
@@ -292,22 +356,12 @@ var view = {
 			animationSpeed = presenter.returnAnimationSpeed();
 			speed = animationSpeed.speed;
 			if (nodesToAnimate.length > 0 && !(animationSpeed.noAnimation)) {
-				var animation = nodesToAnimate.shift()
-				animate[animation.animationType](animation.node.id);
+				animateNextNodeSublist(nodesToAnimate);
 			} else {
-				if (nodeToAdd) {
-					presenter.addToParent(nodeToAdd); 
-					var nodeWrap = view.drawNode(nodeToAdd);
-					nodeWrap.transition()
-						.attr('transform', 'scale(1)')
-						.duration(speed)
-						.each('end', function() {
-							if (numbersToAdd && numbersToAdd.length > 0) {
-								setTimeout(function() {
-									view.addNode(numbersToAdd);
-								}, animationSpeed.delay)
-							}
-						});
+				if (numbersToAdd && numbersToAdd.length > 0) {
+					setTimeout(function() {
+						view.addNode(numbersToAdd);
+					}, animationSpeed.delay)
 				}
 			}
 		}
@@ -333,7 +387,8 @@ var view = {
 			return;
 		}
 		input.val('');
-		presenter.SearchforNode(value);
+
+		presenter.searchForNode(value);
 		view.animateNodes(presenter.returnNodesToAnimate(), null, null);
 	},
 	'deleteNode': function() {
@@ -342,6 +397,7 @@ var view = {
 		input.val('');
 
 		presenter.deleteNode(value);
+		view.animateNodes(presenter.returnNodesToAnimate(), null, null);
 	},
 	'resetZoom': function() {
 		lastEvent = null;
