@@ -56,6 +56,19 @@ bstNode.prototype.allChildren = function() {
 	return children;
 }
 
+function printTree() {
+	var leftNodeVal, rightNodeVal;
+	if (rootNode.leftNode) { leftNodeVal = rootNode.leftNode.value; }
+	if (rootNode.rightNode) { rightNodeVal = rootNode.rightNode.value; }
+	console.log(rootNode.value, 'Left Node: ' + leftNodeVal, 'Right Node: ' + rightNodeVal);
+	$.each(rootNode.allChildren(), function(index, node) {
+		var leftNodeVal, rightNodeVal;
+		if (node.leftNode) { leftNodeVal = node.leftNode.value; }
+		if (node.rightNode) { rightNodeVal = node.rightNode.value; }
+		console.log(node.value, 'Left Node: ' + leftNodeVal, 'Right Node: ' + rightNodeVal);
+	})
+}
+
 // bstNode.prototype.upBranch = function(node) {
 // 	if (this.parent === node) {
 // 		return true;
@@ -85,6 +98,7 @@ var presenter = {
 			node.depth = parentNode.depth + 1;
 			node.parent = parentNode;
 		}
+		presenter.addToParent(node);
 		model.nodesToAnimate.push([{'node':node,'animationType':'add'}])
 	},
 	'addToParent': function(node) {
@@ -156,16 +170,22 @@ var presenter = {
 		}
 		return false;
 	},
-	'deleteNode': function(value) {
-		var deleteNode = presenter.searchForNode(value);
-		model.nodesToAnimate.push([{'node':deleteNode,'animationType':'delete'}])
-		var children = deleteNode.children();
-		var childNodesToAnimate = [];
-		var replaceNode = null;
+	'deleteNode': function(valueOrNode) {
+		var deleteNode
+		if (valueOrNode instanceof bstNode) {
+			deleteNode = valueOrNode;
+		} else {
+			deleteNode = presenter.searchForNode(valueOrNode);
+		}
+		if (!(deleteNode)) { return; }
+		var children = deleteNode.children(), hide = false;
+		if (children.length == 2) { hide = true; }
+		model.nodesToAnimate.push([{'node':deleteNode,'animationType':'delete', 'hide':hide}])
+		var childNodesToAnimate = [], replaceNode = null;
 		if (children.length == 1) {
 			replaceNode = children[0];
 			
-			replaceNode.depth -= 1;
+			replaceNode.depth = deleteNode.depth;
 			replaceNode.locX = deleteNode.locX;
 			replaceNode.locY = deleteNode.locY;
 			replaceNode.parent = deleteNode.parent;
@@ -174,26 +194,49 @@ var presenter = {
 				'x':deleteNode.locX, 'y':deleteNode.locY, 'drawConnection':true});
 
 			$.each(replaceNode.allChildren(), function(index, node) {
-				node.depth -= 1;
+				node.depth = node.parent.depth + 1;
 				presenter.addToParent(node);
 				childNodesToAnimate.push({'node':node,'animationType':'move',
 				'x':node.locX, 'y':node.locY, 'lineAnimation':{'x1': node.parent.locX - node.locX, 
 					'y1': node.parent.locY - node.locY, 'x2': 0, 'y2': 0}});
 			});
-		}
-		if (deleteNode.parent) {
-			if (deleteNode.parent.leftNode === deleteNode) {
-				deleteNode.parent.leftNode = replaceNode;
-			} else {
-				deleteNode.parent.rightNode = replaceNode;
+		} else if (children.length == 2) {
+			var findLargestChild = function(node) {
+				if (node.rightNode) {
+					return findLargestChild(node.rightNode);
+				} else {
+					return node
+				}
 			}
-		} else {
-			rootNode = replaceNode;
-			replaceNode.parent = null;
+			replaceNode = findLargestChild(deleteNode.leftNode);
+
+			model.nodesToAnimate.push([{'node':replaceNode,'animationType':'move',
+				'x':deleteNode.locX, 'y':deleteNode.locY,'removeConnection':true}]);
+
+			deleteNode.value = replaceNode.value;
+
+			model.nodesToAnimate.push([{'node':replaceNode,'animationType':'hide'}]);
+			model.nodesToAnimate.push([{'node':deleteNode,'animationType':'unhide', 'drawConnection':true,
+				'drawChildrenConnection':true, 'newValue':true}]);
+
+			presenter.deleteNode(replaceNode);			
 		}
 
-		model.nodesToAnimate.push(childNodesToAnimate);
-		deleteNode = null;
+		if (children.length < 2) { 
+			if (childNodesToAnimate.length > 0) { model.nodesToAnimate.push(childNodesToAnimate); }
+			if (deleteNode.parent) {
+				if (deleteNode.parent.leftNode === deleteNode) {
+					deleteNode.parent.leftNode = replaceNode;
+				} else if (deleteNode.parent.rightNode === deleteNode) {
+					deleteNode.parent.rightNode = replaceNode;
+
+				}
+			} else {
+				rootNode = replaceNode;
+				if (replaceNode) { replaceNode.parent = null; }
+			}
+			deleteNode = null; 
+		}
 	},
 	'findParentFromValue': function(node, value) {
 		model.nodesToAnimate.push([{'node':node,'animationType':'pop'}]);
@@ -220,6 +263,7 @@ var presenter = {
 		if (value > 2) { model.animationSpeed.delay = 0; } else
 			{ model.animationSpeed.delay = Math.min(0, - 100 * Math.pow(value, 2) + 50 * value + 300); }
 		model.animationSpeed.speed = 150 * Math.pow(value, -1);
+		if (value == 5.1) { model.animationSpeed.speed = 0; }
 		model.animationSpeed.noAnimation = noAnimation;
 		if (noAnimation) { model.nodesToAnimate = []; }
 	},
@@ -287,32 +331,53 @@ var view = {
 
 		var animate = {
 			'pop': function(animation) {
-				d3.select('#' + animation.node.id + ' > .nodeWrap')
-					.transition()
-					.attr('transform', 'scale(1.5)')
-					.duration(speed)
-					.transition()
-					.attr('transform', 'scale(1)')
-					.duration(speed)
-					.transition()
-					.attr('transform', null)
-					.duration(0)
-					.each('end', function () {
-						animateNextNodeSublist(nodesToAnimate);
-					});
+				if (animationSpeed.noAnimation) {
+					animateNextNodeSublist(nodesToAnimate);
+					animateNextNode();
+				} else {
+					d3.select('#' + animation.node.id + ' > .nodeWrap')
+						.transition()
+						.attr('transform', 'scale(1.5)')
+						.duration(speed)
+						.transition()
+						.attr('transform', 'scale(1)')
+						.duration(speed)
+						.transition()
+						.attr('transform', null)
+						.duration(0)
+						.each('end', function () {
+							animateNextNode();
+						});
+					animateNextNodeSublist(nodesToAnimate);
+				}
 			},
 			'delete': function(animation) {
 				d3.select('#' + animation.node.id + ' > .nodeWrap')
 					.transition()
 					.attr('transform', 'scale(0)')
 					.duration(speed)
-					.each('end', animateNextNode);
-				$('#' + animation.node.id).remove();
-				$.each(presenter.returnChildren(animation.node), function(index, node) {
-					$('#' + node.id + ' > .nodeLine').remove();
-				})
+					.each('end', function () {
+						$('#' + animation.node.id + ' > .nodeLine').remove();
+						$.each(presenter.returnChildren(animation.node), function(index, node) {
+							$('#' + node.id + ' > .nodeLine').remove();
+						})
+						if (!(animation.hide)) { $('#' + animation.node.id).remove(); }
+						animateNextNode();
+					});
+				animateNextNodeSublist(nodesToAnimate);
 			},
 			'move': function(animation) {
+				if (animation.node.parent) { 
+					$('#' + animation.node.id).insertBefore( $('#' + animation.node.parent.id) );
+				} else {
+					$('#' + animation.node.id).appendTo('#svg > g > g');
+				}
+				if (animation.removeConnection) {
+					$('#' + animation.node.id + ' > .nodeLine').remove();
+					$.each(presenter.returnChildren(animation.node), function(index, node) {
+						$('#' + node.id + ' > .nodeLine').remove();
+					})
+				}
 				d3.select('#' + animation.node.id).transition()
 					.attr('transform', 'translate(' + animation.x + ',' + animation.y + ')')
 					.duration(speed)
@@ -320,6 +385,7 @@ var view = {
 						if (animation.drawConnection) {
 							view.drawConnection(animation.node.parent, animation.node);
 						}
+						animateNextNode();
 					});
 				if (animation.lineAnimation) {
 					d3.select('#' + animation.node.id + ' > .nodeLine').transition()
@@ -327,10 +393,32 @@ var view = {
 						'x2': animation.lineAnimation.x2, 'y2': animation.lineAnimation.y2})
 					.duration(speed)
 				}
-				animateNextNodeSublist(nodesToAnimate)
+				animateNextNodeSublist(nodesToAnimate);
 			},
-			'add': function(animation) {
-				presenter.addToParent(animation.node); 
+			'unhide': function(animation) {
+				d3.select('#' + animation.node.id + ' > .nodeWrap')
+					.attr('transform', 'scale(1)');
+				if (animation.drawConnection) {
+					view.drawConnection(animation.node.parent, animation.node);
+				}
+				if (animation.drawChildrenConnection) {
+					$.each(presenter.returnChildren(animation.node), function(index, node) {
+						view.drawConnection(node.parent, node);
+					})
+				}
+				if (animation.newValue) {
+					d3.select('#' + animation.node.id + ' > .nodeWrap > text')
+						.text(animation.node.value);
+				}
+				animateNextNodeSublist(nodesToAnimate);
+				animateNextNode();
+			},
+			'hide': function(animation) {
+				$('#' + animation.node.id).hide();
+				animateNextNodeSublist(nodesToAnimate);
+				animateNextNode();
+			},
+			'add': function(animation) { 
 				var nodeWrap = view.drawNode(animation.node);
 				nodeWrap.transition()
 					.attr('transform', 'scale(1)')
@@ -341,21 +429,21 @@ var view = {
 
 		function animateNextNodeSublist(nodesToAnimate) {
 			var nextAnimation;
-			if (nodesToAnimate.length > 0) {
+			if (nodesToAnimate[0].length > 0) {
 				nextAnimation = nodesToAnimate[0].pop();
-				if (nodesToAnimate[0].length < 1) { nodesToAnimate.shift(); }
 			}
 			if (nextAnimation) {
+				animationSpeed = presenter.returnAnimationSpeed();
+				speed = animationSpeed.speed;
 				animate[nextAnimation.animationType](nextAnimation); 
-			} else {
-				animateNextNode();
 			}
 		}
 
 		function animateNextNode() {
 			animationSpeed = presenter.returnAnimationSpeed();
 			speed = animationSpeed.speed;
-			if (nodesToAnimate.length > 0 && !(animationSpeed.noAnimation)) {
+			if (nodesToAnimate[0] && nodesToAnimate[0].length == 0) { nodesToAnimate.shift(); }
+			if (nodesToAnimate.length > 0) {
 				animateNextNodeSublist(nodesToAnimate);
 			} else {
 				if (numbersToAdd && numbersToAdd.length > 0) {
