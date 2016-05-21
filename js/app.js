@@ -69,26 +69,16 @@ function printTree() {
 	})
 }
 
-// bstNode.prototype.upBranch = function(node) {
-// 	if (this.parent === node) {
-// 		return true;
-// 	} else if (node === rootNode) {
-// 		return false;
-// 	}
-// 	console.log(node);
-// 	this.upBranch(node.parent);
-// }
-
 var rootNode = null;
 
 var model = {
-	'pixelOffset': 30,
+	'pixelOffset': 300,
 	'nodesToAnimate': [],
 	'animationSpeed': {'speed': 150, 'delay': 250, noAnimation: false}
 }
 
 var presenter = {
-	'addNode': function(value) {
+	'addNode': function(value, numbersToAdd) {
 		var node = new bstNode(value);
 		if (!rootNode) {
 			rootNode = node;
@@ -97,44 +87,49 @@ var presenter = {
 			var parentNode = presenter.findParentFromValue(rootNode, value);
 			node.depth = parentNode.depth + 1;
 			node.parent = parentNode;
+			presenter.addToParent(node);
 		}
-		presenter.addToParent(node);
 		model.nodesToAnimate.push([{'node':node,'animationType':'add'}])
+		view.animateNodes(presenter.returnNodesToAnimate(), numbersToAdd);
 	},
 	'addToParent': function(node) {
 		if (node.parent) {
-			var parentNode = node.parent, pixelOffset = model.pixelOffset, xOffset = 1;
-			node.inRightBranch = node.parent.inRightBranch;
-			//node.xOffset = (Math.abs(parent.offset) + 1)*Math.sign(parent.offset);
+			var parentNode = node.parent, pixelOffset = model.pixelOffset;
+
 			if (node.value >= parentNode.value) {
 				parentNode.rightNode = node;
-				if (node.depth == 1) { node.xOffset = 1 }
-					else {
-				if (node.inRightBranch) {
-						node.xOffset = parentNode.xOffset * 2;
-					} else {
-						node.xOffset = (parentNode.xOffset * 2) + 1;
-					}
-				}
+				node.locX = parentNode.locX + pixelOffset / Math.pow(2, node.depth - 1);
 			} else {
 				parentNode.leftNode = node;
-				if (node.depth == 1) {
-					node.inRightBranch = false;
-					node.xOffset = -1;
-				} else {
-					if (node.inRightBranch) {
-						node.xOffset = (parentNode.xOffset * 2) - 1;
-					} else {
-						node.xOffset = (parentNode.xOffset * 2);
-					}
-				}
-			}
-			node.locX = rootNode.locX + pixelOffset * node.xOffset;		
-			node.locY = rootNode.locY + 3 * pixelOffset * node.depth;
+				node.locX = parentNode.locX - pixelOffset / Math.pow(2, node.depth - 1);					
+			}	
+			node.locY = rootNode.locY + pixelOffset / 4 * node.depth;
 		}
+
+		function fixCollisions(nodeToCheck) {
+			var closeness = 2;
+			$.each(rootNode.allChildren(), function(index, node) {
+				if (nodeToCheck !== node && nodeToCheck.locY == node.locY && 
+					(Math.abs(nodeToCheck.locX - node.locX) < closeness * node.size)) {
+					nodeToCheck.locX += Math.sign(nodeToCheck.locX - node.locX) * closeness / 2 * nodeToCheck.size;
+					node.locX += Math.sign(node.locX - nodeToCheck.locX) * closeness / 2 * nodeToCheck.size;
+					var childNodesToAnimate = []
+					childNodesToAnimate.push({'node':node,'animationType':'move',
+						'x':node.locX, 'y':node.locY, 'lineAnimation':{'x1': node.parent.locX - node.locX, 
+						'y1': node.parent.locY - node.locY, 'x2': 0, 'y2': 0}})
+					$.each(node.children(), function(index, node) {
+						childNodesToAnimate.push({'node':node,'animationType':'move',
+						'x':node.locX, 'y':node.locY, 'lineAnimation':{'x1': node.parent.locX - node.locX, 
+							'y1': node.parent.locY - node.locY, 'x2': 0, 'y2': 0}});
+					});
+
+					if (childNodesToAnimate.length > 0) { model.nodesToAnimate.push(childNodesToAnimate); }
+				}
+			});
+		}
+		fixCollisions(node);
 	},
 	'searchForNode': function(value) {
-		model.nodesToAnimate = [];
 		var node;
 		if (rootNode)  { node = presenter.searchDownTree(rootNode, value); }
 		if (node && node.value == value) {
@@ -263,9 +258,10 @@ var presenter = {
 		if (value > 2) { model.animationSpeed.delay = 0; } else
 			{ model.animationSpeed.delay = Math.min(0, - 100 * Math.pow(value, 2) + 50 * value + 300); }
 		model.animationSpeed.speed = 150 * Math.pow(value, -1);
-		if (value == 5.1) { model.animationSpeed.speed = 0; }
 		model.animationSpeed.noAnimation = noAnimation;
-		if (noAnimation) { model.nodesToAnimate = []; }
+		if (noAnimation) {
+			model.animationSpeed.speed = 0;
+		}
 	},
 	'returnNodesToAnimate': function() {
 		return model.nodesToAnimate;
@@ -284,9 +280,9 @@ var view = {
 			var input = $('#addNode'), value = Number(input.val());
 			input.val('');
 		}
+
 		if (view.checkForBadValue(value)) { return; }
-		presenter.addNode(value);
-		view.animateNodes(presenter.returnNodesToAnimate(), numbersToAdd);
+		presenter.addNode(value, numbersToAdd);
 	},
 	'draw':	function() {
 
@@ -332,8 +328,7 @@ var view = {
 		var animate = {
 			'pop': function(animation) {
 				if (animationSpeed.noAnimation) {
-					animateNextNodeSublist(nodesToAnimate);
-					animateNextNode();
+					endOfTransitions();
 				} else {
 					d3.select('#' + animation.node.id + ' > .nodeWrap')
 						.transition()
@@ -345,10 +340,7 @@ var view = {
 						.transition()
 						.attr('transform', null)
 						.duration(0)
-						.each('end', function () {
-							animateNextNode();
-						});
-					animateNextNodeSublist(nodesToAnimate);
+						.each('end', endOfTransitions);
 				}
 			},
 			'delete': function(animation) {
@@ -362,12 +354,11 @@ var view = {
 							$('#' + node.id + ' > .nodeLine').remove();
 						})
 						if (!(animation.hide)) { $('#' + animation.node.id).remove(); }
-						animateNextNode();
+						endOfTransitions();
 					});
-				animateNextNodeSublist(nodesToAnimate);
 			},
 			'move': function(animation) {
-				if (animation.node.parent) { 
+				if (animation.node.parent) {
 					$('#' + animation.node.id).insertBefore( $('#' + animation.node.parent.id) );
 				} else {
 					$('#' + animation.node.id).appendTo('#svg > g > g');
@@ -385,7 +376,7 @@ var view = {
 						if (animation.drawConnection) {
 							view.drawConnection(animation.node.parent, animation.node);
 						}
-						animateNextNode();
+						endOfTransitions();
 					});
 				if (animation.lineAnimation) {
 					d3.select('#' + animation.node.id + ' > .nodeLine').transition()
@@ -393,7 +384,6 @@ var view = {
 						'x2': animation.lineAnimation.x2, 'y2': animation.lineAnimation.y2})
 					.duration(speed)
 				}
-				animateNextNodeSublist(nodesToAnimate);
 			},
 			'unhide': function(animation) {
 				d3.select('#' + animation.node.id + ' > .nodeWrap')
@@ -410,47 +400,46 @@ var view = {
 					d3.select('#' + animation.node.id + ' > .nodeWrap > text')
 						.text(animation.node.value);
 				}
-				animateNextNodeSublist(nodesToAnimate);
-				animateNextNode();
+				endOfTransitions();
 			},
 			'hide': function(animation) {
 				$('#' + animation.node.id).hide();
-				animateNextNodeSublist(nodesToAnimate);
-				animateNextNode();
+				endOfTransitions();
 			},
 			'add': function(animation) { 
 				var nodeWrap = view.drawNode(animation.node);
 				nodeWrap.transition()
 					.attr('transform', 'scale(1)')
 					.duration(speed)
-					.each('end', animateNextNode);
+					.each('end', endOfTransitions);
 			}
 		}
 
-		function animateNextNodeSublist(nodesToAnimate) {
-			var nextAnimation;
-			if (nodesToAnimate[0].length > 0) {
-				nextAnimation = nodesToAnimate[0].pop();
+		function endOfTransitions() {
+			nodesToAnimate[0].pop()
+			if (nodesToAnimate[0].length == 0) {
+				nodesToAnimate.shift();
+				animateNextNode();
 			}
-			if (nextAnimation) {
+		}
+
+		function animateAllNodesInSublist(nodesToAnimate) {
+			$.each(nodesToAnimate[0], function(index, child) {
 				animationSpeed = presenter.returnAnimationSpeed();
 				speed = animationSpeed.speed;
-				animate[nextAnimation.animationType](nextAnimation); 
-			}
+				animate[child.animationType](child); 
+			})	
 		}
 
 		function animateNextNode() {
-			animationSpeed = presenter.returnAnimationSpeed();
-			speed = animationSpeed.speed;
-			if (nodesToAnimate[0] && nodesToAnimate[0].length == 0) { nodesToAnimate.shift(); }
 			if (nodesToAnimate.length > 0) {
-				animateNextNodeSublist(nodesToAnimate);
+				animateAllNodesInSublist(nodesToAnimate);
 			} else {
-				if (numbersToAdd && numbersToAdd.length > 0) {
-					setTimeout(function() {
+				setTimeout(function() {
+					if (numbersToAdd && numbersToAdd[0]) {
 						view.addNode(numbersToAdd);
-					}, animationSpeed.delay)
-				}
+					}
+				}, animationSpeed.delay)
 			}
 		}
 		animateNextNode();
