@@ -72,7 +72,7 @@ function printTree() {
 var rootNode = null;
 
 var model = {
-	'pixelOffset': 300,
+	'pixelOffset': 250,
 	'nodesToAnimate': [],
 	'animationSpeed': {'speed': 150, 'delay': 250, noAnimation: false}
 }
@@ -98,10 +98,10 @@ var presenter = {
 
 			if (node.value >= parentNode.value) {
 				parentNode.rightNode = node;
-				node.locX = parentNode.locX + pixelOffset / Math.pow(2, node.depth - 1);
+				node.locX = parentNode.locX + pixelOffset / Math.pow(1.8, node.depth - 1);
 			} else {
 				parentNode.leftNode = node;
-				node.locX = parentNode.locX - pixelOffset / Math.pow(2, node.depth - 1);					
+				node.locX = parentNode.locX - pixelOffset / Math.pow(1.8, node.depth - 1);					
 			}	
 			node.locY = rootNode.locY + pixelOffset / 4 * node.depth;
 		}
@@ -286,12 +286,8 @@ var view = {
 	},
 	'draw':	function() {
 
-		if (d3.event) {
-			lastEvent = d3.event;
-		}
-		if (lastEvent) {
-			svg.attr('transform', 'translate(' + lastEvent.translate + ')scale(' + lastEvent.scale + ')');
-		}
+		svg.attr('transform', 'translate(' + d3.event.translate + ')scale(' + d3.event.scale + ')');
+
 	},
 	'drawNode': function(node) {
 
@@ -310,6 +306,7 @@ var view = {
 		nodeWrap.append('text')
 			.attr('dy', '.35em')
 			.text(node.value);
+
 		return nodeWrap;
 
 	},
@@ -477,8 +474,12 @@ var view = {
 		view.animateNodes(presenter.returnNodesToAnimate(), null, null);
 	},
 	'resetZoom': function() {
-		lastEvent = null;
-		svg.attr('transform', null);
+		svg.transition()
+			.duration(500)
+			.attr('transform', 'translate(0, 0) scale(1)');
+		zoomHandler.scale(1);
+		zoomHandler.translate([0, 0]);
+		console.log(d3.behavior.zoom().scale());
 	},
 	'checkForBadValue': function(value) {
 		if (isNaN(value)) {
@@ -502,15 +503,11 @@ $('#animationSpeed').slider({
 	}
 });
 
+var zoomHandler = d3.behavior.zoom().scaleExtent([0.5, 10]).on('zoom', view.draw);
 var svg = d3.select('#svg')
-	// .attr("width", window.innerWidth)
-	// .attr("height", window.innerHeight - 50)
-	.call(d3.behavior.zoom().scaleExtent([0.5, 10]).on('zoom', view.draw))
+	.call(zoomHandler)
 	.append('g')
 	.append('g');
-	//.node().getContext('2d');
-
-var lastEvent = null;
 
 var formFunctions = {
 	'addNodeForm': view.addNode,
