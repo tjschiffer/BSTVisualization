@@ -135,6 +135,17 @@ text {
     width: 250px;
   }
 
+  .form-inline .form-group {
+    display: inline-block;
+    margin-bottom: 0;
+    vertical-align: middle;
+  }
+
+  .form-inline .form-control {
+    display: inline-block;
+    vertical-align: middle;
+  }
+
   #addNode {
     width: 4.8em;
   }
