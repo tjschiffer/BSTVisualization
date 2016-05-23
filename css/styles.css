@@ -91,9 +91,12 @@ text {
     width: 370px;
   }
 
+<<<<<<< HEAD
   #deleteNode {
     width: 12em;
   }
+=======
+>>>>>>> master
 
   #addNode {
     width: 13em;
@@ -103,6 +106,13 @@ text {
     width: 10em;
   }
 
+<<<<<<< HEAD
+=======
+  #deleteNode {
+    width: 12em;
+  }
+
+>>>>>>> master
   #addRandom {
     width: 12em;
   }
@@ -134,7 +144,34 @@ text {
     width: 250px;
   }
 
+<<<<<<< HEAD
   input {
+=======
+  #addNode {
+    width: 4.8em;
+  }
+
+  #searchForNode {
+    width: 4.8em;
+    margin-top: -1.3em;
+    margin-left: 0.2em;
+  }
+
+  #deleteNode {
+    width: 3.75em;
+  }
+
+  #searchForNodeForm > div > label {
+    width: 5em;
+  }
+
+  #addRandom {
+    width: 5.15em;
+    margin-top: -1.8em;
+  }
+
+  #addRandomForm > div > label {
+>>>>>>> master
     width: 10em;
   }
 }
