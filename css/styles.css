@@ -91,9 +91,6 @@ text {
     width: 370px;
   }
 
-  #deleteNode {
-    width: 12em;
-  }
 
   #addNode {
     width: 13em;
@@ -101,6 +98,10 @@ text {
 
   #searchForNode {
     width: 10em;
+  }
+
+  #deleteNode {
+    width: 12em;
   }
 
   #addRandom {
@@ -134,7 +135,30 @@ text {
     width: 250px;
   }
 
-  input {
+  #addNode {
+    width: 4.8em;
+  }
+
+  #searchForNode {
+    width: 4.8em;
+    margin-top: -1.3em;
+    margin-left: 0.2em;
+  }
+
+  #deleteNode {
+    width: 3.75em;
+  }
+
+  #searchForNodeForm > div > label {
+    width: 5em;
+  }
+
+  #addRandom {
+    width: 5.15em;
+    margin-top: -1.8em;
+  }
+
+  #addRandomForm > div > label {
     width: 10em;
   }
 }
