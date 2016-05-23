@@ -6,17 +6,17 @@ body {
 }
 
 body {
-	padding-top: 50px;
+  padding-top: 50px;
   background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKLW/AAAAG0lEQVQIW2NMSUkxnjNnzlkQzcgABDABRmQZABYMDsKplnKFAAAAAElFTkSuQmCC) repeat;
 }
 
 .sidebar {
-	padding-top: 15px;
+  padding-top: 15px;
 }
 
 .list-group, .btn {
-	border-radius: 4px;
-	box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.4);
+  border-radius: 4px;
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.4);
 }
 
 #addRandomForm .popover {
@@ -24,7 +24,7 @@ body {
 }
 
 .svg {
-	position: fixed;
+  position: fixed;
   width: 100%;
   height: 100%;
 }
@@ -39,7 +39,7 @@ text {
 }
 
 .navbar-inverse .navbar-brand {
-	color: #d9d9d9;
+  color: #d9d9d9;
 }
 
 .navbar-inverse .navbar-brand:hover, 
@@ -91,12 +91,6 @@ text {
     width: 370px;
   }
 
-<<<<<<< HEAD
-  #deleteNode {
-    width: 12em;
-  }
-=======
->>>>>>> master
 
   #addNode {
     width: 13em;
@@ -106,13 +100,10 @@ text {
     width: 10em;
   }
 
-<<<<<<< HEAD
-=======
   #deleteNode {
     width: 12em;
   }
 
->>>>>>> master
   #addRandom {
     width: 12em;
   }
@@ -144,9 +135,6 @@ text {
     width: 250px;
   }
 
-<<<<<<< HEAD
-  input {
-=======
   #addNode {
     width: 4.8em;
   }
@@ -171,7 +159,6 @@ text {
   }
 
   #addRandomForm > div > label {
->>>>>>> master
     width: 10em;
   }
 }
