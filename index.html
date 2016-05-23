@@ -9,7 +9,8 @@
     <meta name="description" content="">
     <meta name="author" content="Timothy J Schiffer">
 
-    <title>BST Visualization</title>
+    <title>Binary Search Tree Visualization</title>
+    <link rel="shortcut icon" href="img/node.png">
 
     <!-- Bootstrap Core CSS -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
@@ -38,16 +39,13 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <div class="navbar-brand">Binary Search Tree</div>
+                <div class="navbar-brand">Binary Search Tree Visualization</div>
             </div>
             <!-- Collect the nav links, forms, and other content for toggling -->
             <div class="collapse navbar-collapse">
                 <ul class="nav navbar-nav">
                     <li>
-                        <a href="#">About</a>
-                    </li>
-                    <li>
-                        <a href="#">GitHub</a>
+                        <a href="https://github.com/tjschiffer/BSTVisualization" target="_blank">GitHub</a>
                     </li>
                 </ul>
             </div>
@@ -66,7 +64,7 @@
                 <div class="list-group-item">
                     <form class="form-inline" id="addNodeForm" role="form">
                         <div class="form-group">
-                            <label for="addNode">Add Node: </label>
+                            <label for="addNode">Add node: </label>
                             <input type="number" class="form-control" id="addNode">
                         </div>
                         <button type="submit" class="btn btn-default">Submit</button>
@@ -75,7 +73,7 @@
                 <div class="list-group-item">
                     <form class="form-inline" id="searchForNodeForm" role="form">
                         <div class="form-group">
-                            <label for="searchForNode">Search for Node: </label>
+                            <label for="searchForNode">Search for node: </label>
                             <input type="number" class="form-control" id="searchForNode">
                         </div>
                         <button type="submit" class="btn btn-default">Submit</button>
@@ -84,7 +82,7 @@
                 <div class="list-group-item">
                     <form class="form-inline" id="deleteNodeForm" role="form">
                         <div class="form-group">
-                            <label for="deleteNode">Delete Node: </label>
+                            <label for="deleteNode">Delete node: </label>
                             <input type="number" class="form-control" id="deleteNode">
                         </div>
                         <button type="submit" class="btn btn-default">Submit</button>
@@ -93,8 +91,9 @@
                 <div class="list-group-item">
                     <form class="form-inline" id="addRandomForm" role="form">
                         <div class="form-group">
-                            <label for="addRandom">Amount of Randoms to Add: </label>
-                            <input type="number" class="form-control" id="addRandom">
+                            <label for="addRandom">Amount of random nodes to add: </label>
+                            <input type="number" class="form-control" id="addRandom" data-toggle="popover" data-trigger="hover" 
+                                data-content="Random valued nodes between 0 and 1000 will be added.">
                         </div>
                         <button type="submit" class="btn btn-default">Submit</button>
                     </form>
@@ -129,6 +128,7 @@
             $('[data-toggle=offcanvas]').click(function () {
                 $('.row-offcanvas').toggleClass('active');
             });
+            $('#addRandom').popover({placement:'bottom'});
         });
     </script>
 

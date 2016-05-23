@@ -19,19 +19,9 @@ body {
 	box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.4);
 }
 
-#deleteNode {
-  width: 12em;
+#addRandomForm .popover {
+  width: 20em;
 }
-#addNode {
-  width: 13em;
-}
-#searchForNode {
-  width: 10em;
-}
-
-/*.btn-toggle {
-	margin-left: 10px;
-}*/
 
 .svg {
 	position: fixed;
@@ -51,6 +41,7 @@ text {
 .navbar-inverse .navbar-brand {
 	color: #d9d9d9;
 }
+
 .navbar-inverse .navbar-brand:hover, 
 .navbar-inverse .navbar-brand:focus {
   background-color: transparent;
@@ -62,22 +53,17 @@ text {
 }
 
 #animationSpeedForm  label {
-  margin-right: 10px;
+  margin-right: 2px;
 }
+
 #animationSpeedForm .slider-selection {
   background: #d8d8d8;
 }
 
-/*
- * Off Canvas
- * --------------------------------------------------
- * Greater thav 768px shows the menu by default and also flips the semantics
- * The issue is to show menu for large screens and to hide for small
- * Also need to do something clever to turn off the tabs for when the navigation is hidden
- * Otherwise keyboard users cannot find the focus point
- * (For now I will ignore that for mobile users and also not worry about
- * screen re-sizing popping the menu out.)
- */
+.slider.slider-horizontal {
+  width: 205px;
+}
+
 @media screen and (min-width: 1000px) {
   .row-offcanvas {
     position: relative;
@@ -87,11 +73,11 @@ text {
   }
 
   .row-offcanvas-left {
-    left: 415px;
+    left: 385px;
   }
 
   .row-offcanvas-left .sidebar-offcanvas {
-    left: -415px;
+    left: -385px;
   }
 
   .row-offcanvas-left.active {
@@ -102,7 +88,23 @@ text {
   .sidebar-offcanvas {
     position: absolute;
     top: 0;
-    width: 400px;
+    width: 370px;
+  }
+
+  #deleteNode {
+    width: 12em;
+  }
+
+  #addNode {
+    width: 13em;
+  }
+
+  #searchForNode {
+    width: 10em;
+  }
+
+  #addRandom {
+    width: 12em;
   }
 }
 @media screen and (max-width: 999px) {
@@ -130,5 +132,9 @@ text {
     position: absolute;
     top: 0;
     width: 250px;
+  }
+
+  input {
+    width: 10em;
   }
 }
