@@ -12,21 +12,22 @@ function generateUUID() { // https://jsfiddle.net/briguy37/2MVFd/
 
 var bstNode = function(value) {
 	this.value = value;
-	this.leftNode = null;
-	this.rightNode = null;
-	this.parent = null;
-	this.locX = null;
-	this.locY = 50;
-	this.depth = 0;
-	this.inRightBranch = true;
-	this.xOffset = 1;
 
 	this.id = generateUUID();
-
-	this.size = 14;
-	this.fillStyle = '#0099cc';
-	this.fillStyleText = '#000';
 }
+
+bstNode.prototype.leftNode = null;
+bstNode.prototype.rightNode = null;
+bstNode.prototype.parent = null;
+bstNode.prototype.locX = null;
+bstNode.prototype.locY = 50;
+bstNode.prototype.depth = 0;
+bstNode.prototype.inRightBranch = true;
+bstNode.prototype.xOffset = 1;
+
+bstNode.prototype.size = 14;
+bstNode.prototype.fillStyle = '#0099cc';
+bstNode.prototype.fillStyleText = '#000';
 
 bstNode.prototype.children = function() {
 	var children = [];
