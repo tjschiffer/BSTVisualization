@@ -305,6 +305,7 @@ var view = {
 			.style({'fill': node.fillStyle, 'stroke': node.fillStyleText, 'stroke-width': 2});
 
 		nodeWrap.append('text')
+			.attr('dx', '0')
 			.attr('dy', '.35em')
 			.text(node.value);
 
